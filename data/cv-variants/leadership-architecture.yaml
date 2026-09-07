@@ -1,0 +1,12 @@
+# CV Variant: Leadership & Architecture
+# Specify which bullet tags to include for this variant.
+variant: leadership
+include_tags:
+  - architecture
+  - tech-lead
+  - ownership
+  - mentoring
+  - maintainability
+# Optionally, exclude certain tags
+exclude_tags: []
+# Optionally, list specific bullets by index or ID (not used in this minimal version)

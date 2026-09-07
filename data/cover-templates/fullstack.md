@@ -1,0 +1,12 @@
+Hej,
+
+Jag söker rollen som <ROLE> hos <COMPANY> eftersom <COMPANY_MOTIVATION>.
+
+<CORE_EXPERIENCE>
+
+<RELEVANT_FULLSTACK_EXPERIENCE>
+
+<VALUE_PROPOSITION>
+
+Vänliga hälsningar,  
+<YOUR_NAME>

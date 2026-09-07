@@ -1,0 +1,8 @@
+education:
+  - degree: Example degree — replace or remove
+    school: Example institution — replace or remove
+    start: YYYY
+    end: YYYY
+    location: Example location — replace or remove
+    summary: |
+      Replace this text with factual details about your education.

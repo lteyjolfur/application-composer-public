@@ -1,0 +1,8 @@
+# CV Variant: Frontend Focused
+variant: frontend
+include_tags:
+  - frontend
+  - react
+  - performance
+  - reliability
+exclude_tags: []

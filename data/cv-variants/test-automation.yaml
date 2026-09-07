@@ -1,0 +1,23 @@
+# CV Variant: Test Automation
+
+# Specify which bullet tags to include for this variant.
+
+variant: testautomation
+
+include_tags:
+  - test-automation
+  - quality
+  - reliability
+  - tooling
+  - developer-experience
+  - maintainability
+  - debugging
+  - frontend
+  - typescript
+  - integration
+
+# Optionally, exclude certain tags
+
+exclude_tags: []
+
+# Optionally, list specific bullets by index or ID (not used in this minimal version)

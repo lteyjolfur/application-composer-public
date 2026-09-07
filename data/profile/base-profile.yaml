@@ -1,0 +1,11 @@
+name: Your Name
+email: you@example.com
+location: Your Location
+phone: "+00 000 000 000"
+linkedin: your-profile
+github: your-username
+summary: |
+  Replace this text with a factual professional summary describing your experience, strengths, and the roles you are targeting.
+languages:
+  - language: Your language
+    level: Your proficiency

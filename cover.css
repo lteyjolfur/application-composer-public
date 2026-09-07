@@ -1,0 +1,19 @@
+/* Override spacing for cover letters */
+
+body {
+  max-width: 720px;
+}
+
+h1 {
+  font-size: 24pt;
+  margin-bottom: 14px;
+}
+
+h1 + p {
+  margin-bottom: 26px;
+  font-size: 10.5pt;
+}
+
+p {
+  margin: 10px 0;
+}

@@ -1,0 +1,30 @@
+# Bullet Bank
+# Replace these unmistakable examples with factual achievements you can defend
+# in an interview. Keep each id unique and use only tags from data/tags/tags.yaml.
+
+- id: example-frontend-achievement
+  text: >
+    [EXAMPLE — replace or remove] Describe a user-facing feature you built and its measurable result.
+  tags:
+    - frontend
+    - react
+    - typescript
+  section: experience
+
+- id: example-backend-achievement
+  text: >
+    [EXAMPLE — replace or remove] Describe a backend service or integration you delivered and why it mattered.
+  tags:
+    - backend
+    - fullstack
+    - integration
+  section: impact
+
+- id: example-leadership-achievement
+  text: >
+    [EXAMPLE — replace or remove] Describe how you helped a team improve its technical practices or delivery.
+  tags:
+    - leadership
+    - mentoring
+    - maintainability
+  section: leadership

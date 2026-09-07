@@ -1,0 +1,12 @@
+# CV Variant: Fullstack Balanced
+variant: fullstack
+include_tags:
+  - fullstack
+  - backend
+  - integration
+  - authentication
+  - payments
+  - node
+  - reliability
+  - maintainability
+exclude_tags: []
