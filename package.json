@@ -17,5 +17,22 @@
   },
   "dependencies": {
     "yaml": "^2.3.4"
-  }
+  },
+  "description": "Local, file-based CV and cover letter composer for tailoring job applications from YAML and Markdown.",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=20.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lteyjolfur/application-composer-public.git"
+  },
+  "keywords": [
+    "cv",
+    "resume",
+    "cover-letter",
+    "yaml",
+    "markdown"
+  ]
 }
