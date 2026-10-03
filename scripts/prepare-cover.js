@@ -1,29 +1,13 @@
-"use strict";
 // scripts/prepare-cover.js
 // Prepend a formatted header to a cover letter template for a given application
 import fs from "fs";
 import path from "path";
-import yaml from "yaml";
-import { fileURLToPath, pathToFileURL } from "url";
+import { pathToFileURL } from "url";
 import { formatHeader, formatFileBase } from "./lib/formatting.js";
+import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..", "");
 const PLACEHOLDER_COVER_RE =
   /^# Cover Letter\s+Draft or generated cover letter goes here\./m;
-
-function readYaml(filePath) {
-  return yaml.parse(fs.readFileSync(filePath, "utf8"));
-}
-
-function getCssPath(outputPath) {
-  const relative = path.relative(
-    path.dirname(outputPath),
-    path.join(repoRoot, "style.css"),
-  );
-  return relative || "style.css";
-}
 
 function rel(filePath) {
   return path.relative(repoRoot, filePath);
@@ -39,13 +23,14 @@ function printCoverExportCommand({ profile, applicationName, coverPath }) {
   const htmlPath = path.join(appDir, `${baseName}.html`);
   const pdfPath = path.join(appDir, `${baseName}.pdf`);
   const cssPath = getCssPath(coverPath);
+  const coverCssPath = getCssPath(coverPath, "cover.css");
   const mdRel = rel(coverPath);
   const htmlRel = rel(htmlPath);
   const pdfRel = rel(pdfPath);
 
   console.log("\nPDF export:");
   console.log(
-    `pandoc ${mdRel} -o ${htmlRel} --css=${cssPath} --css=../../cover.css --standalone && weasyprint --quiet ${htmlRel} ${pdfRel}`,
+    `pandoc ${mdRel} -o ${htmlRel} --css=${cssPath} --css=${coverCssPath} --standalone && weasyprint --quiet ${htmlRel} ${pdfRel}`,
   );
   console.log("");
 }

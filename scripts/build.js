@@ -2,8 +2,8 @@
 
 import fs from "fs";
 import path from "path";
-import yaml from "yaml";
-import { fileURLToPath, pathToFileURL } from "url";
+import { pathToFileURL } from "url";
+import { repoRoot, readYaml } from "./lib/files.js";
 import {
   loadBullets,
   loadVariant,
@@ -11,9 +11,6 @@ import {
   SECTION_ORDER,
 } from "./lib/selection.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..");
 const PLACEHOLDER_CV_RE = /^# Generated CV\s+Run:/m;
 
 function buildCV(variantName, cliTags) {
@@ -90,7 +87,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     }
     let appConfig;
     try {
-      appConfig = yaml.parse(fs.readFileSync(tagsPath, "utf8"));
+      appConfig = readYaml(tagsPath);
     } catch (e) {
       console.error(`Error parsing selected-tags.yaml: ${e}`);
       process.exit(1);

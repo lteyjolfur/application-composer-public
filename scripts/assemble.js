@@ -1,4 +1,13 @@
+// scripts/assemble.js
+// Assemble a full markdown CV from YAML data and selected bullets.
+import fs from "fs";
+import path from "path";
+import { pathToFileURL } from "url";
+
 import { formatFileBase, formatHeader } from "./lib/formatting.js";
+import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
+import { loadBullets, loadVariant, selectBullets } from "./lib/selection.js";
+import { prepareCover } from "./prepare-cover.js";
 
 function formatExperience(exp, dynamicBullets) {
   let out = "## Experience\n\n";
@@ -38,23 +47,6 @@ function formatProfile(profile) {
   return `## Profile\n\n${profile.summary.trim()}\n\n`;
 }
 
-// scripts/assemble.js
-// Assemble a full markdown CV from YAML data and selected bullets.
-import fs from "fs";
-import path from "path";
-import yaml from "yaml";
-import { fileURLToPath, pathToFileURL } from "url";
-
-import { loadBullets, loadVariant, selectBullets } from "./lib/selection.js";
-import { prepareCover } from "./prepare-cover.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..");
-
-function readYaml(filePath) {
-  return yaml.parse(fs.readFileSync(filePath, "utf8"));
-}
 
 function getProfile() {
   const profilePath = path.join(repoRoot, "data/profile/base-profile.yaml");
@@ -182,21 +174,12 @@ function formatEducation(eduYaml) {
 
 function formatLanguages(languages) {
   if (!Array.isArray(languages) || !languages.length) return "";
-  let out = "## Languages\n\n";
-  languages.forEach((l) => {
-    if (!l.language) return;
-    out += `${l.language}: ${l.level || ""}`.trim() + "\n";
-  });
-  out += "\n";
-  return out;
-}
-
-function getCssPath(outputPath) {
-  const relative = path.relative(
-    path.dirname(outputPath),
-    path.join(repoRoot, "style.css"),
-  );
-  return relative || "style.css";
+  const lines = languages
+    .filter((l) => l.language)
+    .map((l) => `${l.language}: ${l.level || ""}`.trim());
+  if (!lines.length) return "";
+  // Trailing double space is a Markdown hard line break, one language per line.
+  return `## Languages\n\n${lines.join("  \n")}\n\n`;
 }
 
 function getCoverTemplateName(variantName, effectiveTags) {
@@ -362,7 +345,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     }
     let appConfig;
     try {
-      appConfig = yaml.parse(fs.readFileSync(tagsPath, "utf8"));
+      appConfig = readYaml(tagsPath);
     } catch (e) {
       console.error(`Error parsing selected-tags.yaml: ${e}`);
       process.exit(1);
