@@ -16,15 +16,10 @@ import fs from "fs";
 import path from "path";
 import yaml from "yaml";
 import { fileURLToPath } from "url";
+import { normalizeBullets, SECTION_ORDER } from "./lib/selection.js";
 
 function readYaml(filePath) {
   return yaml.parse(fs.readFileSync(filePath, "utf8"));
-}
-
-function normalizeBullets(data) {
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.bullets)) return data.bullets;
-  return null;
 }
 
 function validateBullets(bullets) {
@@ -57,6 +52,12 @@ function validateBullets(bullets) {
 
     if (typeof b.text !== "string" || b.text.trim() === "") {
       errors.push(`${prefix}.text must be a non-empty string.`);
+    }
+
+    if (b.section !== undefined && !SECTION_ORDER.includes(b.section)) {
+      errors.push(
+        `${prefix}.section "${b.section}" must be one of: ${SECTION_ORDER.join(", ")}.`,
+      );
     }
 
     if (!Array.isArray(b.tags) || b.tags.length === 0) {
@@ -339,11 +340,6 @@ function validateSkills(skillsYaml) {
   if (!variantFiles.length) allErrors.push("No variant YAML files found.");
   // Collect all valid variant names
   const validVariants = new Set();
-  let knownTags = new Set();
-  if (bullets) {
-    const bulletValidation = validateBullets(bullets);
-    knownTags = bulletValidation.knownTags;
-  }
   const variantTagMap = {};
   for (const file of variantFiles) {
     const variantPath = path.join(variantsDir, file);

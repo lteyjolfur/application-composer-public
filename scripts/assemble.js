@@ -5,7 +5,7 @@ function formatExperience(exp, dynamicBullets) {
   const entries = Array.isArray(exp) ? exp : [exp];
   entries.forEach((e, idx) => {
     if (!e.role && !e.company) return;
-    out += `<div class=\"job\">\n`;
+    out += `<div class="job">\n`;
     out +=
       `### ${e.role || ""}${e.role && e.company ? ", " : ""}${e.company || ""}`.trim() +
       "\n";
@@ -43,7 +43,7 @@ function formatProfile(profile) {
 import fs from "fs";
 import path from "path";
 import yaml from "yaml";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 import { loadBullets, loadVariant, selectBullets } from "./lib/selection.js";
 import { prepareCover } from "./prepare-cover.js";
@@ -327,7 +327,7 @@ function assembleCV({ variantName, tags, outputPath, applicationName }) {
 }
 
 // CLI entry
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const appEq = process.argv.find((a) => a.startsWith("--application="));
   const appIdx = process.argv.indexOf("--application");
   let applicationName;

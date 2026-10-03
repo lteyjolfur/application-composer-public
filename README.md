@@ -52,6 +52,7 @@ npm run validate
 ## Scripts
 
 - `npm run validate` - Validate source data, tags, variants, and application folder structure
+- `npm run lint` - Lint the scripts with ESLint
 - `npm run new-app -- --name <company-role-slug>` - Create a new application folder
 - `npm run assemble -- --application <folder>` - Build a complete CV for an application
 - `npm run assemble -- --variant <variant>` - Build a complete CV for a variant into `output/`
@@ -99,6 +100,9 @@ Source files:
 - `cover-letter.md` - Generated or edited cover letter Markdown
 
 Generated export files may also exist in application folders, usually as `.html` and `.pdf`.
+
+Application folders other than `applications/test-app/` are gitignored because
+they contain personal data, and so are generated `.html` and `.pdf` exports.
 
 Example:
 
