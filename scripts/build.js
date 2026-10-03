@@ -3,7 +3,7 @@
 import fs from "fs";
 import path from "path";
 import yaml from "yaml";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import {
   loadBullets,
   loadVariant,
@@ -14,6 +14,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
+const PLACEHOLDER_CV_RE = /^# Generated CV\s+Run:/m;
 
 function buildCV(variantName, cliTags) {
   const bullets = loadBullets(repoRoot);
@@ -31,11 +32,7 @@ function buildCV(variantName, cliTags) {
     variant.exclude_tags || [],
   );
 
-  const grouped = {
-    experience: [],
-    impact: [],
-    leadership: [],
-  };
+  const grouped = Object.fromEntries(SECTION_ORDER.map((s) => [s, []]));
 
   selected.forEach((b) => {
     grouped[b.section || "experience"].push(b);
@@ -58,7 +55,7 @@ function buildCV(variantName, cliTags) {
   return out;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const appEq = process.argv.find((a) => a.startsWith("--application="));
   const appIdx = process.argv.indexOf("--application");
   let applicationName;
@@ -111,6 +108,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     cliTags = appConfig.tags || [];
     outputPath = path.join(appDir, "cv.md");
+    // Only replace the placeholder written by new-app; never an assembled or edited CV.
+    if (
+      fs.existsSync(outputPath) &&
+      !PLACEHOLDER_CV_RE.test(fs.readFileSync(outputPath, "utf8"))
+    ) {
+      console.error(
+        `applications/${applicationName}/cv.md already has content. Refusing to overwrite.`,
+      );
+      process.exit(1);
+    }
   } else {
     // Normal variant build
     const variantEq = process.argv.find((a) => a.startsWith("--variant="));
@@ -145,7 +152,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     outputPath = path.join(outputDir, `${variantName}.md`);
   }
 
-  const out = buildCV(variantName, cliTags);
+  let out;
+  try {
+    out = buildCV(variantName, cliTags);
+  } catch (e) {
+    console.error(e.message || e);
+    process.exit(1);
+  }
   fs.writeFileSync(outputPath, out);
   console.log(`Built CV for variant: ${variantName}`);
   if (applicationName) {

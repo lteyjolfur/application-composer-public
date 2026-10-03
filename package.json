@@ -7,10 +7,13 @@
     "build": "node scripts/build.js",
     "assemble": "node scripts/assemble.js",
     "new-app": "node scripts/new-application.js",
-    "prepare-cover": "node scripts/prepare-cover.js"
+    "prepare-cover": "node scripts/prepare-cover.js",
+    "lint": "eslint ."
   },
   "devDependencies": {
-    "eslint": "^10.3.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.3.0",
+    "globals": "^17.13.0"
   },
   "dependencies": {
     "yaml": "^2.3.4"

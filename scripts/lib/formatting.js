@@ -29,7 +29,7 @@ function formatFileBase({ profile, context, type }) {
   // Name → Your_Name
   const name = (profile.name || "").trim().replace(/\s+/g, "_");
 
-  // Context → tieto-frontend → Tieto_Frontend
+  // Context → example-company-frontend → Example_Company_Frontend
   const ctx = context
     ? context
         .split(/[-_]/)

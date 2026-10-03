@@ -4,9 +4,33 @@ import fs from "fs";
 import path from "path";
 import yaml from "yaml";
 
+export const SECTION_ORDER = ["experience", "impact", "leadership"];
+
+// bullets.yaml may be a top-level array or an object with a `bullets` array.
+export function normalizeBullets(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.bullets)) return data.bullets;
+  return null;
+}
+
 export function loadBullets(repoRoot) {
   const bulletPath = path.join(repoRoot, "data/bullet-bank/bullets.yaml");
-  return yaml.parse(fs.readFileSync(bulletPath, "utf8"));
+  const bullets = normalizeBullets(
+    yaml.parse(fs.readFileSync(bulletPath, "utf8")),
+  );
+  if (!bullets) {
+    throw new Error(
+      "bullets.yaml must be an array or an object with a bullets array. Run npm run validate.",
+    );
+  }
+  for (const b of bullets) {
+    if (b?.section !== undefined && !SECTION_ORDER.includes(b.section)) {
+      throw new Error(
+        `Bullet '${b.id}' has unknown section '${b.section}'. Allowed: ${SECTION_ORDER.join(", ")}.`,
+      );
+    }
+  }
+  return bullets;
 }
 
 export function loadVariant(repoRoot, variantName) {
@@ -28,8 +52,6 @@ const TAG_WEIGHTS = {
   authentication: 2,
   payments: 2,
 };
-
-export const SECTION_ORDER = ["experience", "impact", "leadership"];
 
 const SECTION_LIMITS = {
   experience: 2,

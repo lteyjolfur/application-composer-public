@@ -1,41 +1,49 @@
 # AGENTS.md
 
-## Instructions for AI Agents
+Local, file-based CV and cover letter composer. Workflow, data formats, and
+commands: `README.md`. Candidate priorities: `PROJECT.md`. Scripts: `package.json`.
 
-- Keep all data local and file-based (YAML, JSON, Markdown)
-- Never introduce cloud dependencies or external databases
-- Maintain clear separation:
-  - `data/profile/` for base profile data
-  - `data/experience/` for work history
-  - `data/skills/` for skills
-  - `data/cv-variants/` for CV templates/variants (YAML config only)
-  - `data/cover-templates/` for reusable cover letter templates
-  - `data/bullet-bank/` for reusable bullet points (YAML)
-- Scripts and logic go in `scripts/`
-- Output CVs go in `output/`
-- Prefer explicit, readable files over clever abstractions
-- Bullet-bank and job-ad matching logic is allowed from Phase 2+
-- Bullet selection for variants is tag-based (see below)
-- Never replace validation with a stub or success-only implementation. Validation must fail on invalid data.
-- Always keep the repo easy to edit in VS Code
+## Content is factual
 
-### Bullet Bank Conventions
+Every achievement, metric, employer, date, and skill in a CV or cover letter
+comes from the candidate's data files or from the user. Where a fact is
+missing, leave a visible placeholder (`<LIKE_THIS>`) and ask the user.
 
-- All bullets are stored in `data/bullet-bank/bullets.yaml` as YAML objects with `text` and `tags`.
-- Tags are simple strings (e.g., `frontend`, `leadership`, `performance`).
-- To add a bullet, edit `bullets.yaml` and add a new entry.
+This repo is a public template: committed content stays generic and marked
+(`Your Name`, `[EXAMPLE — replace or remove]`). Real candidate data and real
+applications stay out of commits.
 
-### CV Variant Conventions
+## Where things go
 
-- Each variant is a YAML file in `data/cv-variants/` (e.g., `frontend-focused.yaml`).
-- Variants specify which bullet tags to include (and optionally exclude).
-- To attach a bullet to a variant, add the tag to the variant's `include_tags`.
+Follow the layout in README → "Personalize This Repository". The one rule that
+is easy to get wrong: candidate facts live in `data/`, and anything specific to
+one job (ad, notes, generated CV and letter) lives in `applications/<slug>/`.
 
-### Scripts
+## Tags
 
-- `npm run validate` — Validate all source data (bullets, variants)
-- `npm run build -- --variant <variant>` — Build a CV for a variant
+`data/tags/tags.yaml` is the allow-list for every tag used in
+`data/bullet-bank/bullets.yaml`, `data/cv-variants/*.yaml`, and
+`applications/*/selected-tags.yaml`. When you add or rename a tag anywhere,
+update `tags.yaml` in the same change.
 
-### Output
+## Generated files
 
-- Built CVs are written to `output/<variant>.md`
+`npm run assemble -- --application <slug>` and `npm run build -- --application <slug>`
+overwrite that application's `cv.md`. Ask the user before regenerating an
+application whose `cv.md` has hand edits. `prepare-cover` already protects an
+edited `cover-letter.md`.
+
+## Code style
+
+- Store data as local YAML, JSON, or Markdown that a person can edit by hand.
+  Dependencies are local npm packages; the tool runs fully offline.
+- Write explicit files and plain functions in `scripts/` (shared helpers in
+  `scripts/lib/`).
+- `scripts/validate.js` exists to reject bad data. When you add a field or a
+  file type, add a check that fails on invalid input.
+
+## Done means
+
+- `npm run validate` exits 0 after any change to `data/` or `scripts/`.
+- After a script change, run the affected command against
+  `applications/test-app` (or `--variant <name>`) and read the output.

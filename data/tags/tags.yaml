@@ -1,7 +1,30 @@
+# Allowed tags for bullets, variants, and application selected-tags.yaml.
+# Add a tag here before using it anywhere else.
 tags:
+  # Stack
   - frontend
   - backend
   - fullstack
   - react
   - node
   - typescript
+  # Domains
+  - authentication
+  - payments
+  - integration
+  # Qualities
+  - performance
+  - reliability
+  - maintainability
+  - quality
+  # Practices
+  - test-automation
+  - tooling
+  - developer-experience
+  - debugging
+  # Leadership
+  - leadership
+  - tech-lead
+  - mentoring
+  - ownership
+  - architecture

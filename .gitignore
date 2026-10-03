@@ -2,3 +2,11 @@ node_modules/
 output/*
 !output/.gitkeep
 .DS_Store
+
+# Real applications contain personal data; only the example is tracked.
+applications/*
+!applications/.gitkeep
+!applications/test-app/
+# Generated exports
+applications/**/*.html
+applications/**/*.pdf
