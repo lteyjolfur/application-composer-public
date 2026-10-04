@@ -109,7 +109,17 @@ function validateBullets(data, allowedTags) {
   return errors;
 }
 
-function validateVariant(variant, file, allowedTags) {
+// Each pinned id must name a bullet in the bullet bank.
+function validatePins(pin, label, bulletsById) {
+  if (pin === undefined || pin === null) return [];
+  if (!Array.isArray(pin)) return [`${label} must be an array if present.`];
+  return pin.flatMap((id, i) => {
+    if (!isNonEmptyString(id)) return [`${label}[${i}] must be a non-empty string.`];
+    return bulletsById.has(id) ? [] : [`${label}: unknown bullet id '${id}'.`];
+  });
+}
+
+function validateVariant(variant, file, allowedTags, bulletsById = new Map()) {
   const prefix = `variant ${file}`;
   if (!variant || typeof variant !== "object") {
     return [`${prefix} must be an object.`];
@@ -137,11 +147,12 @@ function validateVariant(variant, file, allowedTags) {
       );
     }
   }
+  errors.push(...validatePins(variant.pin, `${prefix}.pin`, bulletsById));
   return errors;
 }
 
 // Returns the set of variant names declared across all variant files.
-function validateVariants(allowedTags, errors) {
+function validateVariants(allowedTags, bulletsById, errors) {
   const variantsDir = path.join(repoRoot, PATHS.variants);
   const files = fs
     .readdirSync(variantsDir)
@@ -152,7 +163,7 @@ function validateVariants(allowedTags, errors) {
   for (const file of files) {
     const variant = tryReadYaml(path.join(PATHS.variants, file), errors);
     if (variant === undefined) continue;
-    errors.push(...validateVariant(variant, file, allowedTags));
+    errors.push(...validateVariant(variant, file, allowedTags, bulletsById));
     if (isNonEmptyString(variant?.variant)) {
       if (names.has(variant.variant)) {
         errors.push(`variant ${file}: variant name '${variant.variant}' is used by another file.`);
@@ -163,7 +174,7 @@ function validateVariants(allowedTags, errors) {
   return names;
 }
 
-function validateApplication(folder, variantNames, allowedTags, errors) {
+function validateApplication(folder, variantNames, allowedTags, bulletsById, errors) {
   const tagsRelPath = path.join(PATHS.applications, folder, "selected-tags.yaml");
   if (!fs.existsSync(path.join(repoRoot, tagsRelPath))) {
     errors.push(`Application '${folder}' is missing selected-tags.yaml.`);
@@ -171,10 +182,18 @@ function validateApplication(folder, variantNames, allowedTags, errors) {
   }
   const config = tryReadYaml(tagsRelPath, errors);
   if (config === undefined) return;
-  errors.push(...validateApplicationConfig(config, folder, variantNames, allowedTags));
+  errors.push(
+    ...validateApplicationConfig(config, folder, variantNames, allowedTags, bulletsById),
+  );
 }
 
-function validateApplicationConfig(config, folder, variantNames, allowedTags) {
+function validateApplicationConfig(
+  config,
+  folder,
+  variantNames,
+  allowedTags,
+  bulletsById = new Map(),
+) {
   const prefix = `application ${folder}`;
   if (!isNonEmptyString(config?.variant)) {
     return [`${prefix}: selected-tags.yaml must contain a 'variant' string.`];
@@ -197,6 +216,16 @@ function validateApplicationConfig(config, folder, variantNames, allowedTags) {
       errors.push(`${prefix}: '${key}' must be a string if present.`);
     }
   }
+  errors.push(...validatePins(config.pin, `${prefix}.pin`, bulletsById));
+  if (Array.isArray(config.pin) && Array.isArray(config.exclude_tags)) {
+    const excluded = new Set(config.exclude_tags);
+    for (const id of config.pin) {
+      const hit = bulletsById.get(id)?.tags?.find((tag) => excluded.has(tag));
+      if (hit) {
+        errors.push(`${prefix}: pinned bullet '${id}' has excluded tag '${hit}'.`);
+      }
+    }
+  }
   if (Array.isArray(config.tags) && Array.isArray(config.exclude_tags)) {
     const excluded = new Set(config.exclude_tags);
     for (const tag of config.tags.filter((t) => excluded.has(t))) {
@@ -206,12 +235,12 @@ function validateApplicationConfig(config, folder, variantNames, allowedTags) {
   return errors;
 }
 
-function validateApplications(variantNames, allowedTags, errors) {
+function validateApplications(variantNames, allowedTags, bulletsById, errors) {
   const applicationsDir = path.join(repoRoot, PATHS.applications);
   if (!fs.existsSync(applicationsDir)) return;
   for (const folder of fs.readdirSync(applicationsDir)) {
     if (!fs.statSync(path.join(applicationsDir, folder)).isDirectory()) continue;
-    validateApplication(folder, variantNames, allowedTags, errors);
+    validateApplication(folder, variantNames, allowedTags, bulletsById, errors);
   }
 }
 
@@ -308,9 +337,13 @@ function main() {
   errors.push(...tagResult.errors);
   const { allowedTags } = tagResult;
 
-  errors.push(...validateBullets(tryReadYaml(PATHS.bullets, errors), allowedTags));
-  const variantNames = validateVariants(allowedTags, errors);
-  validateApplications(variantNames, allowedTags, errors);
+  const bulletData = tryReadYaml(PATHS.bullets, errors);
+  errors.push(...validateBullets(bulletData, allowedTags));
+  const bulletsById = new Map(
+    (normalizeBullets(bulletData) || []).filter((b) => b?.id).map((b) => [b.id, b]),
+  );
+  const variantNames = validateVariants(allowedTags, bulletsById, errors);
+  validateApplications(variantNames, allowedTags, bulletsById, errors);
   errors.push(...validateProfile(tryReadYaml(PATHS.profile, errors)));
   errors.push(...validateExperience(tryReadYaml(PATHS.experience, errors)));
   errors.push(...validateSkills(tryReadYaml(PATHS.skills, errors)));

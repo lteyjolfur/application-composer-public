@@ -41,15 +41,15 @@ export function loadVariant(repoRoot, variantName) {
   throw new Error(`Variant not found: ${variantName}`);
 }
 
-// Combine a variant's tags with extra tags from an application or the CLI.
+// Combine a variant's tags and pins with extra ones from an application or the CLI.
 // Excluded tags win: a tag in both lists is removed from the include list.
-export function resolveTags(variant, { tags = [], excludeTags = [] } = {}) {
+export function resolveTags(variant, { tags = [], excludeTags = [], pin = [] } = {}) {
   const exclude = [...new Set([...(variant.exclude_tags || []), ...excludeTags])];
   const excluded = new Set(exclude);
   const include = [...new Set([...(variant.include_tags || []), ...tags])].filter(
     (tag) => !excluded.has(tag),
   );
-  return { include, exclude };
+  return { include, exclude, pin: [...new Set([...(variant.pin || []), ...pin])] };
 }
 
 const MAX_BULLETS = 4;
@@ -82,7 +82,15 @@ function isDuplicate(text, selected) {
   });
 }
 
-export function selectBullets(bullets, effectiveTags, excludeTags = []) {
+// Pinned bullets (by id) come first, regardless of tags, exclusions, or the cap.
+// Remaining slots are filled by score.
+export function selectBullets(bullets, effectiveTags, excludeTags = [], pinnedIds = []) {
+  const byId = new Map(bullets.map((b) => [b.id, b]));
+  const unknown = pinnedIds.filter((id) => !byId.has(id));
+  if (unknown.length) {
+    throw new Error(`Pinned bullet id not found in bullets.yaml: ${unknown.join(", ")}.`);
+  }
+  const pinned = new Set(pinnedIds);
   const excluded = new Set(excludeTags);
   const scored = bullets.map((b, index) => {
     let score = 0;
@@ -100,15 +108,13 @@ export function selectBullets(bullets, effectiveTags, excludeTags = []) {
   });
 
   const sorted = scored
+    .filter((b) => !pinned.has(b.id))
     .filter((b) => b.score > 0 && !b.tags.some((tag) => excluded.has(tag)))
     .sort((a, b) => b.score - a.score || a.index - b.index);
 
-  const selected = [];
-  const sectionCounts = {
-    experience: 0,
-    impact: 0,
-    leadership: 0,
-  };
+  const selected = pinnedIds.map((id) => scored.find((b) => b.id === id));
+  const sectionCounts = Object.fromEntries(SECTION_ORDER.map((s) => [s, 0]));
+  for (const b of selected) sectionCounts[b.section]++;
 
   // PASS 1: respect section limits
   for (const b of sorted) {

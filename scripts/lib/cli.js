@@ -67,7 +67,7 @@ export function readApplicationConfig(appDir) {
   if (!config?.variant || typeof config.variant !== "string") {
     throw new Error("selected-tags.yaml must contain a 'variant' string.");
   }
-  for (const key of ["tags", "exclude_tags"]) {
+  for (const key of ["tags", "exclude_tags", "pin"]) {
     if (config[key] && !Array.isArray(config[key])) {
       throw new Error(`'${key}' in selected-tags.yaml must be an array if present.`);
     }
@@ -81,13 +81,14 @@ export function readApplicationConfig(appDir) {
     variantName: config.variant,
     tags: config.tags || [],
     excludeTags: config.exclude_tags || [],
+    pin: config.pin || [],
     company: config.company || "",
     role: config.role || "",
   };
 }
 
 // Resolve what to build from `--application <folder>` or
-// `--variant <name> [--tags a,b] [--exclude-tags c,d]`.
+// `--variant <name> [--tags a,b] [--exclude-tags c,d] [--pin id1,id2]`.
 // The application config wins when both are given.
 export function resolveBuildTarget(argv, usage) {
   const rawApplication = getArg(argv, "application");
@@ -98,12 +99,13 @@ export function resolveBuildTarget(argv, usage) {
       console.warn("Warning: --variant is ignored when --application is provided.");
     }
     const appDir = getApplicationDir(applicationName);
-    const { variantName, tags, excludeTags } = readApplicationConfig(appDir);
+    const { variantName, tags, excludeTags, pin } = readApplicationConfig(appDir);
     return {
       applicationName,
       variantName,
       tags,
       excludeTags,
+      pin,
       outputPath: path.join(appDir, "cv.md"),
     };
   }
@@ -114,6 +116,7 @@ export function resolveBuildTarget(argv, usage) {
 
   const tagsArg = getArg(argv, "tags");
   const excludeArg = getArg(argv, "exclude-tags");
+  const pinArg = getArg(argv, "pin");
   const outputDir = path.join(repoRoot, "output");
   fs.mkdirSync(outputDir, { recursive: true });
   return {
@@ -121,6 +124,7 @@ export function resolveBuildTarget(argv, usage) {
     variantName,
     tags: tagsArg ? parseTagList(tagsArg) : [],
     excludeTags: excludeArg ? parseTagList(excludeArg) : [],
+    pin: pinArg ? parseTagList(pinArg) : [],
     outputPath: path.join(outputDir, `${variantName}.md`),
   };
 }

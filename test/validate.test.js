@@ -137,4 +137,15 @@ describe("validateApplicationConfig", () => {
       "application acme: 'company' must be a string if present.",
     ]);
   });
+
+  it("checks pinned ids exist and are not excluded by the application", () => {
+    const bulletsById = new Map([["pay", { id: "pay", tags: ["backend"] }]]);
+    const pinCheck = (config) =>
+      validateApplicationConfig({ variant: "fullstack", ...config }, "acme", variants, allowed, bulletsById);
+    expect(pinCheck({ pin: ["pay"] })).toEqual([]);
+    expect(pinCheck({ pin: ["nope"] })).toEqual(["application acme.pin: unknown bullet id 'nope'."]);
+    expect(pinCheck({ pin: ["pay"], exclude_tags: ["backend"] })).toEqual([
+      "application acme: pinned bullet 'pay' has excluded tag 'backend'.",
+    ]);
+  });
 });

@@ -230,7 +230,7 @@ function getCoverTemplateName(variantName, effectiveTags) {
   return "base";
 }
 
-function assembleCV({ variantName, tags, excludeTags, outputPath, applicationName }) {
+function assembleCV({ variantName, tags, excludeTags, pin, outputPath, applicationName }) {
   const profile = getProfile();
   const exp = getExperience();
   const skills = getSkills();
@@ -262,11 +262,12 @@ function assembleCV({ variantName, tags, excludeTags, outputPath, applicationNam
     },
   ]);
 
-  const { include: effectiveTags, exclude } = resolveTags(variant, {
+  const { include: effectiveTags, exclude, pin: pinnedIds } = resolveTags(variant, {
     tags,
     excludeTags,
+    pin,
   });
-  const selectedBullets = selectBullets(bullets, effectiveTags, exclude);
+  const selectedBullets = selectBullets(bullets, effectiveTags, exclude, pinnedIds);
 
   // Compose markdown
   let out = "";
@@ -312,7 +313,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const target = resolveBuildTarget(
       process.argv.slice(2),
-      "Usage: npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] or --application <folder>",
+      "Usage: npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] [--pin id1,id2] or --application <folder>",
     );
     assembleCV(target);
   } catch (e) {

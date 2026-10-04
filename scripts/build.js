@@ -14,13 +14,15 @@ import {
 
 const PLACEHOLDER_CV_RE = /^# Generated CV\s+Run:/m;
 
-function buildCV(variantName, tags, excludeTags) {
+function buildCV(variantName, tags, excludeTags, pin) {
   const bullets = loadBullets(repoRoot);
   const variant = loadVariant(repoRoot, variantName);
-  const { include, exclude } = resolveTags(variant, { tags, excludeTags });
+  const resolved = resolveTags(variant, { tags, excludeTags, pin });
+  const { include, exclude } = resolved;
   console.log("Tags:", include.join(", "));
   if (exclude.length) console.log("Excluded:", exclude.join(", "));
-  const selected = selectBullets(bullets, include, exclude);
+  if (resolved.pin.length) console.log("Pinned:", resolved.pin.join(", "));
+  const selected = selectBullets(bullets, include, exclude, resolved.pin);
 
   const grouped = Object.fromEntries(SECTION_ORDER.map((s) => [s, []]));
 
@@ -47,10 +49,10 @@ function buildCV(variantName, tags, excludeTags) {
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const { applicationName, variantName, tags, excludeTags, outputPath } =
+    const { applicationName, variantName, tags, excludeTags, pin, outputPath } =
       resolveBuildTarget(
         process.argv.slice(2),
-        "Usage: npm run build -- --variant <variant> [--tags a,b] [--exclude-tags c,d] or --application <folder>",
+        "Usage: npm run build -- --variant <variant> [--tags a,b] [--exclude-tags c,d] [--pin id1,id2] or --application <folder>",
       );
     // Only replace the placeholder written by new-app; never an assembled or edited CV.
     if (
@@ -62,7 +64,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         `applications/${applicationName}/cv.md already has content. Refusing to overwrite.`,
       );
     }
-    fs.writeFileSync(outputPath, buildCV(variantName, tags, excludeTags));
+    fs.writeFileSync(outputPath, buildCV(variantName, tags, excludeTags, pin));
     console.log(`Built CV for variant: ${variantName}`);
     if (applicationName) {
       console.log(`Output: applications/${applicationName}/cv.md`);

@@ -64,7 +64,7 @@ npm run validate
 - `npm test` - Run the unit tests with Vitest (`npm run test:watch` to rerun on save)
 - `npm run new-app -- --name <company-role-slug>` - Create a new application folder
 - `npm run assemble -- --application <folder>` - Build a complete CV for an application
-- `npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d]` - Build a complete CV for a variant into `output/`
+- `npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] [--pin id1,id2]` - Build a complete CV for a variant into `output/`
 - `npm run build -- --variant <variant>` - Build a minimal bullet-only CV variant
 - `npm run prepare-cover -- --application <folder> --template <template>` - Generate a cover letter from a template
 - `npm run export -- --application <folder>` - Export the CV and cover letter to HTML and PDF
@@ -142,6 +142,8 @@ tags:            # added to the variant's include_tags
   - authentication
 exclude_tags:    # added to the variant's exclude_tags
   - payments
+pin:             # bullet ids always included, listed first
+  - example-frontend-achievement
 ```
 
 - `tags` makes more bullets eligible for this application.
@@ -149,7 +151,11 @@ exclude_tags:    # added to the variant's exclude_tags
   matches the variant. Use it to tailor one application without editing a
   shared variant, for example to leave out payments work when applying to a
   payments competitor.
-- A tag cannot be in both lists; `npm run validate` reports it.
+- `pin` includes bullets by `id` no matter their tags, ahead of the scored
+  ones. Use it when you know exactly which achievement this job needs.
+- A tag cannot be in both `tags` and `exclude_tags`, and an application cannot
+  pin a bullet that its own `exclude_tags` would drop; `npm run validate`
+  reports both.
 
 If both `--application` and `--variant` are passed to `assemble` or `build`, the application config wins.
 
@@ -162,6 +168,7 @@ Each variant has:
 - `variant` - The CLI name, such as `frontend`, `fullstack`, `leadership`, or `testautomation`
 - `include_tags` - Tags used to select bullets
 - `exclude_tags` - Tags that disqualify matching bullets
+- `pin` - Optional bullet ids always included in this variant
 
 Example:
 
@@ -209,6 +216,9 @@ selection logic.
 
 ### How bullets are chosen
 
+0. **Pinned bullets** from the variant's and the application's `pin` (or
+   `--pin id1,id2`) come first, in that order. They ignore tags and exclusions,
+   count toward section quotas, and are all included even past the cap.
 1. **Effective tags** are the variant's `include_tags` plus the application's
    `tags` (or `--tags` on the command line). **Excluded tags** are the variant's
    `exclude_tags` plus the application's `exclude_tags` (or `--exclude-tags`).
@@ -317,6 +327,7 @@ Validation checks:
 - Variants have valid, unique names and include tags
 - Application folders contain required files
 - Application selected variants exist, and no tag is in both an application's `tags` and `exclude_tags`
+- Pinned bullet ids exist, and an application does not pin a bullet its own `exclude_tags` drops
 - Tags used by bullets, variants, and applications exist in `data/tags/tags.yaml`
 - Profile, experience, and skills have the required shape
 
