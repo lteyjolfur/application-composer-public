@@ -60,6 +60,12 @@ describe("validateVariant", () => {
     ).toEqual([]);
   });
 
+  it("checks the variant's cv_sections", () => {
+    expect(
+      validateVariant({ variant: "fe", include_tags: ["frontend"], cv_sections: ["hobbies"] }, "fe.yaml", allowed),
+    ).toHaveLength(1);
+  });
+
   it("rejects missing name, empty include_tags, and unknown exclude tags", () => {
     const errors = validateVariant(
       { include_tags: [], exclude_tags: ["golang"] },
@@ -146,6 +152,19 @@ describe("validateApplicationConfig", () => {
     expect(pinCheck({ pin: ["nope"] })).toEqual(["application acme.pin: unknown bullet id 'nope'."]);
     expect(pinCheck({ pin: ["pay"], exclude_tags: ["backend"] })).toEqual([
       "application acme: pinned bullet 'pay' has excluded tag 'backend'.",
+    ]);
+  });
+
+  it("checks cv_sections names, duplicates, and shape", () => {
+    expect(check({ variant: "fullstack", cv_sections: ["experience", "skills"] })).toEqual([]);
+    expect(check({ variant: "fullstack", cv_sections: ["projects"] }).join("\n")).toMatch(
+      /'projects' must be one of: profile, experience/,
+    );
+    expect(check({ variant: "fullstack", cv_sections: ["skills", "skills"] })).toEqual([
+      "application acme.cv_sections lists 'skills' twice.",
+    ]);
+    expect(check({ variant: "fullstack", cv_sections: [] })).toEqual([
+      "application acme.cv_sections must be a non-empty array if present.",
     ]);
   });
 });

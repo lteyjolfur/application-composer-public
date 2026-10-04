@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
-import { formatHeader } from "./lib/formatting.js";
+import { formatHeader, resolveCvSections } from "./lib/formatting.js";
 import { repoRoot, readYaml } from "./lib/files.js";
 import {
   loadBullets,
@@ -230,7 +230,15 @@ function getCoverTemplateName(variantName, effectiveTags) {
   return "base";
 }
 
-function assembleCV({ variantName, tags, excludeTags, pin, outputPath, applicationName }) {
+function assembleCV({
+  variantName,
+  tags,
+  excludeTags,
+  pin,
+  cvSections,
+  outputPath,
+  applicationName,
+}) {
   const profile = getProfile();
   const exp = getExperience();
   const skills = getSkills();
@@ -269,14 +277,19 @@ function assembleCV({ variantName, tags, excludeTags, pin, outputPath, applicati
   });
   const selectedBullets = selectBullets(bullets, effectiveTags, exclude, pinnedIds);
 
-  // Compose markdown
-  let out = "";
-  out += formatHeader(profile);
-  out += formatProfile(profile);
-  out += formatExperience(exp, selectedBullets);
-  out += formatSkills(skills);
-  out += formatEducation(edu);
-  out += formatLanguages(lang);
+  // Compose markdown: the header, then the chosen sections in order.
+  const renderers = {
+    profile: () => formatProfile(profile),
+    experience: () => formatExperience(exp, selectedBullets),
+    skills: () => formatSkills(skills),
+    education: () => formatEducation(edu),
+    languages: () => formatLanguages(lang),
+  };
+  const out =
+    formatHeader(profile) +
+    resolveCvSections(variant, cvSections)
+      .map((name) => renderers[name]())
+      .join("");
 
   fs.writeFileSync(outputPath, out);
   console.log(`Assembled CV for variant: ${variantName}`);

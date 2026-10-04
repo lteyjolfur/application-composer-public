@@ -144,6 +144,11 @@ exclude_tags:    # added to the variant's exclude_tags
   - payments
 pin:             # bullet ids always included, listed first
   - example-frontend-achievement
+cv_sections:     # which CV sections to show, in order (overrides the variant)
+  - profile
+  - experience
+  - skills
+  - languages
 ```
 
 - `tags` makes more bullets eligible for this application.
@@ -169,6 +174,10 @@ Each variant has:
 - `include_tags` - Tags used to select bullets
 - `exclude_tags` - Tags that disqualify matching bullets
 - `pin` - Optional bullet ids always included in this variant
+- `cv_sections` - Optional list of CV sections to show, in order. Choose from
+  `profile`, `experience`, `skills`, `education`, `languages`; the default is
+  all five in that order. An application's `cv_sections` replaces the variant's.
+  Use it to drop education or lead with skills.
 
 Example:
 

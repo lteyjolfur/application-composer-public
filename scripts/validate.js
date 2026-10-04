@@ -5,6 +5,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { repoRoot, readYaml } from "./lib/files.js";
 import { normalizeBullets, SECTION_ORDER } from "./lib/selection.js";
+import { CV_SECTIONS } from "./lib/formatting.js";
 
 const PATHS = {
   tags: "data/tags/tags.yaml",
@@ -119,6 +120,25 @@ function validatePins(pin, label, bulletsById) {
   });
 }
 
+// cv_sections must be a non-empty list of distinct known section names.
+function validateCvSections(sections, label) {
+  if (sections === undefined || sections === null) return [];
+  if (!Array.isArray(sections) || sections.length === 0) {
+    return [`${label} must be a non-empty array if present.`];
+  }
+  const errors = [];
+  const seen = new Set();
+  sections.forEach((name, i) => {
+    if (!CV_SECTIONS.includes(name)) {
+      errors.push(`${label}[${i}] '${name}' must be one of: ${CV_SECTIONS.join(", ")}.`);
+    } else if (seen.has(name)) {
+      errors.push(`${label} lists '${name}' twice.`);
+    }
+    seen.add(name);
+  });
+  return errors;
+}
+
 function validateVariant(variant, file, allowedTags, bulletsById = new Map()) {
   const prefix = `variant ${file}`;
   if (!variant || typeof variant !== "object") {
@@ -148,6 +168,7 @@ function validateVariant(variant, file, allowedTags, bulletsById = new Map()) {
     }
   }
   errors.push(...validatePins(variant.pin, `${prefix}.pin`, bulletsById));
+  errors.push(...validateCvSections(variant.cv_sections, `${prefix}.cv_sections`));
   return errors;
 }
 
@@ -217,6 +238,7 @@ function validateApplicationConfig(
     }
   }
   errors.push(...validatePins(config.pin, `${prefix}.pin`, bulletsById));
+  errors.push(...validateCvSections(config.cv_sections, `${prefix}.cv_sections`));
   if (Array.isArray(config.pin) && Array.isArray(config.exclude_tags)) {
     const excluded = new Set(config.exclude_tags);
     for (const id of config.pin) {

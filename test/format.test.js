@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fillPlaceholders, formatFileBase, formatHeader } from "../scripts/lib/formatting.js";
+import {
+  CV_SECTIONS,
+  fillPlaceholders,
+  formatFileBase,
+  formatHeader,
+  resolveCvSections,
+} from "../scripts/lib/formatting.js";
 import {
   formatEducation,
   formatExperience,
@@ -125,5 +131,23 @@ describe("fillPlaceholders", () => {
 
   it("does not touch HTML tags or lowercase angle brackets", () => {
     expect(fillPlaceholders('<div class="job"> <name>', { NAME: "x" })).toBe('<div class="job"> <name>');
+  });
+});
+
+describe("resolveCvSections", () => {
+  it("defaults to every section in the standard order", () => {
+    expect(resolveCvSections({})).toEqual(CV_SECTIONS);
+    expect(CV_SECTIONS).toEqual(["profile", "experience", "skills", "education", "languages"]);
+  });
+
+  it("uses the variant's cv_sections", () => {
+    expect(resolveCvSections({ cv_sections: ["experience", "skills"] })).toEqual(["experience", "skills"]);
+  });
+
+  it("lets the application override the variant", () => {
+    expect(resolveCvSections({ cv_sections: ["experience"] }, ["profile", "experience"])).toEqual([
+      "profile",
+      "experience",
+    ]);
   });
 });

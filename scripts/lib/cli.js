@@ -67,7 +67,7 @@ export function readApplicationConfig(appDir) {
   if (!config?.variant || typeof config.variant !== "string") {
     throw new Error("selected-tags.yaml must contain a 'variant' string.");
   }
-  for (const key of ["tags", "exclude_tags", "pin"]) {
+  for (const key of ["tags", "exclude_tags", "pin", "cv_sections"]) {
     if (config[key] && !Array.isArray(config[key])) {
       throw new Error(`'${key}' in selected-tags.yaml must be an array if present.`);
     }
@@ -82,6 +82,7 @@ export function readApplicationConfig(appDir) {
     tags: config.tags || [],
     excludeTags: config.exclude_tags || [],
     pin: config.pin || [],
+    cvSections: config.cv_sections,
     company: config.company || "",
     role: config.role || "",
   };
@@ -99,13 +100,14 @@ export function resolveBuildTarget(argv, usage) {
       console.warn("Warning: --variant is ignored when --application is provided.");
     }
     const appDir = getApplicationDir(applicationName);
-    const { variantName, tags, excludeTags, pin } = readApplicationConfig(appDir);
+    const { variantName, tags, excludeTags, pin, cvSections } = readApplicationConfig(appDir);
     return {
       applicationName,
       variantName,
       tags,
       excludeTags,
       pin,
+      cvSections,
       outputPath: path.join(appDir, "cv.md"),
     };
   }
