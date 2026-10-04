@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Application config (applications/*/selected-tags.yaml)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "company": {
+      "type": "string",
+      "description": "Fills <COMPANY> in the cover letter."
+    },
+    "role": {
+      "type": "string",
+      "description": "Fills <ROLE> in the cover letter."
+    },
+    "variant": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A variant name from data/cv-variants/."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Added to the variant's include_tags."
+    },
+    "exclude_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Added to the variant's exclude_tags."
+    },
+    "pin": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Bullet ids always included, listed first."
+    },
+    "cv_sections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "profile",
+          "experience",
+          "skills",
+          "education",
+          "languages"
+        ]
+      },
+      "description": "CV sections to render, in order. Replaces the variant's cv_sections."
+    }
+  },
+  "required": [
+    "variant"
+  ]
+}

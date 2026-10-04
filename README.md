@@ -28,8 +28,23 @@ Use this repo to tailor applications quickly while keeping the underlying CV dat
 - `output/` - General variant CV output
 - `scripts/` - Build, validation, scaffolding, and formatting logic
 - `docs/` - README images
+- `schemas/` - JSON Schemas for the YAML data files, used by VS Code
 - `style.css` - CV HTML/PDF styling
 - `cover.css` - Cover letter HTML/PDF styling
+
+## Editing In VS Code
+
+Open the repository folder in VS Code and install the recommended
+[YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
+when prompted. `.vscode/settings.json` maps every data file to a JSON Schema in
+`schemas/`, so while you edit you get:
+
+- autocomplete and hover descriptions for every field
+- red underlines for typos (`summery`, `varient`), missing required fields,
+  and invalid values such as an unknown bullet `section` or `cv_sections` name
+
+Tags, pinned ids, and `job` references depend on other files, so only
+`npm run validate` checks those.
 
 ## Personalize This Repository
 

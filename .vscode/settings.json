@@ -1,0 +1,28 @@
+{
+  "yaml.schemas": {
+    "./schemas/bullets.schema.json": [
+      "data/bullet-bank/*.yaml"
+    ],
+    "./schemas/cv-variant.schema.json": [
+      "data/cv-variants/*.yaml"
+    ],
+    "./schemas/application.schema.json": [
+      "applications/*/selected-tags.yaml"
+    ],
+    "./schemas/tags.schema.json": [
+      "data/tags/tags.yaml"
+    ],
+    "./schemas/profile.schema.json": [
+      "data/profile/base-profile.yaml"
+    ],
+    "./schemas/education.schema.json": [
+      "data/profile/education.yaml"
+    ],
+    "./schemas/experience.schema.json": [
+      "data/experience/*.yaml"
+    ],
+    "./schemas/skills.schema.json": [
+      "data/skills/*.yaml"
+    ]
+  }
+}
