@@ -399,8 +399,7 @@ Ruby or Node setup.
 - Posts are Markdown files in `docs/_posts/` named `YYYY-MM-DD-title.md`.
 - Drafts live in `docs/_drafts/` and are never published; move a draft to
   `_posts/` with a date prefix to publish it.
-- Pages are `docs/about.md` and `docs/projects.md`; site settings are in
-  `docs/_config.yml`.
+- `docs/projects.md` is the project page; site settings are in `docs/_config.yml`.
 
 To preview locally (optional), with Docker running:
 
