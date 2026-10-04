@@ -5,6 +5,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { formatHeader, formatFileBase } from "./lib/formatting.js";
 import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
+import { getApplicationDir, getArg, toPlainName } from "./lib/cli.js";
 
 const PLACEHOLDER_COVER_RE =
   /^# Cover Letter\s+Draft or generated cover letter goes here\./m;
@@ -44,10 +45,8 @@ export function prepareCover({
     throw new Error("Missing --application argument.");
   }
 
-  const appDir = path.join(repoRoot, "applications", applicationName);
-  if (!fs.existsSync(appDir)) {
-    throw new Error(`Application folder not found: ${applicationName}`);
-  }
+  const appDir = getApplicationDir(applicationName);
+  toPlainName(templateName, "template name");
 
   const coverPath = path.join(appDir, "cover-letter.md");
   if (fs.existsSync(coverPath)) {
@@ -91,24 +90,11 @@ export function prepareCover({
 
 function main() {
   const args = process.argv.slice(2);
-  let applicationName = null;
-  let templateName = "base";
-
-  for (let i = 0; i < args.length; ++i) {
-    if (args[i] === "--application" && args[i + 1]) {
-      applicationName = args[i + 1];
-      i++;
-    } else if (args[i].startsWith("--application=")) {
-      applicationName = args[i].split("=")[1];
-    } else if (args[i] === "--template" && args[i + 1]) {
-      templateName = args[i + 1];
-      i++;
-    } else if (args[i].startsWith("--template=")) {
-      templateName = args[i].split("=")[1];
-    }
-  }
-
   try {
+    const rawApplication = getArg(args, "application");
+    if (!rawApplication) throw new Error("Missing --application argument.");
+    const applicationName = toPlainName(rawApplication, "application name");
+    const templateName = toPlainName(getArg(args, "template") || "base", "template name");
     prepareCover({ applicationName, templateName });
   } catch (e) {
     console.error(e.message || e);
