@@ -41,6 +41,17 @@ export function loadVariant(repoRoot, variantName) {
   throw new Error(`Variant not found: ${variantName}`);
 }
 
+// Combine a variant's tags with extra tags from an application or the CLI.
+// Excluded tags win: a tag in both lists is removed from the include list.
+export function resolveTags(variant, { tags = [], excludeTags = [] } = {}) {
+  const exclude = [...new Set([...(variant.exclude_tags || []), ...excludeTags])];
+  const excluded = new Set(exclude);
+  const include = [...new Set([...(variant.include_tags || []), ...tags])].filter(
+    (tag) => !excluded.has(tag),
+  );
+  return { include, exclude };
+}
+
 const MAX_BULLETS = 4;
 const TAG_WEIGHTS = {
   integration: 2,

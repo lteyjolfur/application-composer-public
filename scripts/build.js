@@ -7,27 +7,20 @@ import { resolveBuildTarget } from "./lib/cli.js";
 import {
   loadBullets,
   loadVariant,
+  resolveTags,
   selectBullets,
   SECTION_ORDER,
 } from "./lib/selection.js";
 
 const PLACEHOLDER_CV_RE = /^# Generated CV\s+Run:/m;
 
-function buildCV(variantName, cliTags) {
+function buildCV(variantName, tags, excludeTags) {
   const bullets = loadBullets(repoRoot);
   const variant = loadVariant(repoRoot, variantName);
-  const effectiveTags = [
-    ...new Set([
-      ...variant.include_tags,
-      ...(cliTags && cliTags.length ? cliTags : []),
-    ]),
-  ];
-  console.log("Tags:", effectiveTags.join(", "));
-  const selected = selectBullets(
-    bullets,
-    effectiveTags,
-    variant.exclude_tags || [],
-  );
+  const { include, exclude } = resolveTags(variant, { tags, excludeTags });
+  console.log("Tags:", include.join(", "));
+  if (exclude.length) console.log("Excluded:", exclude.join(", "));
+  const selected = selectBullets(bullets, include, exclude);
 
   const grouped = Object.fromEntries(SECTION_ORDER.map((s) => [s, []]));
 
@@ -54,10 +47,10 @@ function buildCV(variantName, cliTags) {
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const { applicationName, variantName, tags, outputPath } =
+    const { applicationName, variantName, tags, excludeTags, outputPath } =
       resolveBuildTarget(
         process.argv.slice(2),
-        "Usage: npm run build -- --variant <variant> [--tags tag1,tag2] or --application <folder>",
+        "Usage: npm run build -- --variant <variant> [--tags a,b] [--exclude-tags c,d] or --application <folder>",
       );
     // Only replace the placeholder written by new-app; never an assembled or edited CV.
     if (
@@ -69,7 +62,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         `applications/${applicationName}/cv.md already has content. Refusing to overwrite.`,
       );
     }
-    fs.writeFileSync(outputPath, buildCV(variantName, tags));
+    fs.writeFileSync(outputPath, buildCV(variantName, tags, excludeTags));
     console.log(`Built CV for variant: ${variantName}`);
     if (applicationName) {
       console.log(`Output: applications/${applicationName}/cv.md`);

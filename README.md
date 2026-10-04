@@ -64,7 +64,7 @@ npm run validate
 - `npm test` - Run the unit tests with Vitest (`npm run test:watch` to rerun on save)
 - `npm run new-app -- --name <company-role-slug>` - Create a new application folder
 - `npm run assemble -- --application <folder>` - Build a complete CV for an application
-- `npm run assemble -- --variant <variant>` - Build a complete CV for a variant into `output/`
+- `npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d]` - Build a complete CV for a variant into `output/`
 - `npm run build -- --variant <variant>` - Build a minimal bullet-only CV variant
 - `npm run prepare-cover -- --application <folder> --template <template>` - Generate a cover letter from a template
 
@@ -131,10 +131,18 @@ Example `selected-tags.yaml`:
 
 ```yaml
 variant: fullstack
-tags:
+tags:            # added to the variant's include_tags
   - authentication
+exclude_tags:    # added to the variant's exclude_tags
   - payments
 ```
+
+- `tags` makes more bullets eligible for this application.
+- `exclude_tags` drops every bullet carrying one of these tags, even if it
+  matches the variant. Use it to tailor one application without editing a
+  shared variant, for example to leave out payments work when applying to a
+  payments competitor.
+- A tag cannot be in both lists; `npm run validate` reports it.
 
 If both `--application` and `--variant` are passed to `assemble` or `build`, the application config wins.
 
@@ -195,11 +203,13 @@ selection logic.
 ### How bullets are chosen
 
 1. **Effective tags** are the variant's `include_tags` plus the application's
-   `tags` (or `--tags` on the command line).
+   `tags` (or `--tags` on the command line). **Excluded tags** are the variant's
+   `exclude_tags` plus the application's `exclude_tags` (or `--exclude-tags`).
+   Excluded tags are also removed from the effective tags (`resolveTags`).
 2. **Scoring:** each bullet scores the sum of its matching tags. Most tags are
    worth 1; `integration`, `backend`, `authentication`, and `payments` are worth 2
-   (`TAG_WEIGHTS`). Bullets scoring 0, and bullets carrying any of the variant's
-   `exclude_tags`, are dropped.
+   (`TAG_WEIGHTS`). Bullets scoring 0, and bullets carrying any excluded tag,
+   are dropped.
 3. **Ordering:** highest score first; ties keep their order in `bullets.yaml`.
 4. **Section quotas (first pass):** at most 2 `experience`, 1 `impact`, and
    1 `leadership` bullet (`SECTION_LIMITS`). A bullet without `section` counts
@@ -297,7 +307,7 @@ Validation checks:
 - Bullet text and tags are valid, and `section` is `experience`, `impact`, or `leadership`
 - Variants have valid, unique names and include tags
 - Application folders contain required files
-- Application selected variants exist
+- Application selected variants exist, and no tag is in both an application's `tags` and `exclude_tags`
 - Tags used by bullets, variants, and applications exist in `data/tags/tags.yaml`
 - Profile, experience, and skills have the required shape
 

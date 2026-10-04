@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeBullets, selectBullets } from "../scripts/lib/selection.js";
+import { normalizeBullets, resolveTags, selectBullets } from "../scripts/lib/selection.js";
 
 function bullet(id, tags, section = "experience", text = `Bullet ${id}.`) {
   return { id, text, tags, section };
@@ -141,5 +141,40 @@ describe("selectBullets", () => {
       );
       expect(ids(selected)).toEqual(["a", "b"]);
     });
+  });
+});
+
+describe("resolveTags", () => {
+  const variant = { include_tags: ["backend", "payments"], exclude_tags: ["legacy"] };
+
+  it("adds extra tags to the variant's include tags", () => {
+    expect(resolveTags(variant, { tags: ["react", "backend"] })).toEqual({
+      include: ["backend", "payments", "react"],
+      exclude: ["legacy"],
+    });
+  });
+
+  it("combines variant and extra exclude tags", () => {
+    expect(resolveTags(variant, { excludeTags: ["payments"] }).exclude).toEqual([
+      "legacy",
+      "payments",
+    ]);
+  });
+
+  it("removes excluded tags from the include list", () => {
+    expect(resolveTags(variant, { excludeTags: ["payments"] }).include).toEqual(["backend"]);
+  });
+
+  it("works with no extra tags and a variant without exclude_tags", () => {
+    expect(resolveTags({ include_tags: ["react"] })).toEqual({ include: ["react"], exclude: [] });
+  });
+
+  it("drops a variant bullet when the application excludes one of its tags", () => {
+    const bullets = [
+      bullet("pay", ["backend", "payments"], "experience"),
+      bullet("api", ["backend"], "experience"),
+    ];
+    const { include, exclude } = resolveTags(variant, { excludeTags: ["payments"] });
+    expect(ids(selectBullets(bullets, include, exclude))).toEqual(["api"]);
   });
 });

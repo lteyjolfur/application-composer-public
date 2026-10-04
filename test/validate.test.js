@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  validateApplicationConfig,
   validateBullets,
   validateExperience,
   validateProfile,
@@ -100,5 +101,33 @@ describe("validateSkills", () => {
   it("rejects empty skills and a missing shape", () => {
     expect(validateSkills({ groups: { Core: [""] } })).toHaveLength(1);
     expect(validateSkills({})).toHaveLength(1);
+  });
+});
+
+describe("validateApplicationConfig", () => {
+  const variants = new Set(["fullstack"]);
+  const check = (config) => validateApplicationConfig(config, "acme", variants, allowed);
+
+  it("accepts tags and exclude_tags", () => {
+    expect(check({ variant: "fullstack", tags: ["frontend"], exclude_tags: ["backend"] })).toEqual([]);
+  });
+
+  it("rejects an unknown variant", () => {
+    expect(check({ variant: "nope" })).toEqual(["application acme: unknown variant 'nope'."]);
+  });
+
+  it("rejects unknown or non-list exclude_tags", () => {
+    expect(check({ variant: "fullstack", exclude_tags: ["golang"] }).join("\n")).toMatch(
+      /exclude_tags: unknown tag 'golang'/,
+    );
+    expect(check({ variant: "fullstack", exclude_tags: "backend" }).join("\n")).toMatch(
+      /'exclude_tags' must be an array/,
+    );
+  });
+
+  it("rejects a tag that is both included and excluded", () => {
+    expect(check({ variant: "fullstack", tags: ["frontend"], exclude_tags: ["frontend"] })).toEqual([
+      "application acme: tag 'frontend' is in both tags and exclude_tags.",
+    ]);
   });
 });

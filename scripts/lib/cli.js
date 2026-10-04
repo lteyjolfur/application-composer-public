@@ -67,14 +67,21 @@ function readApplicationConfig(appDir) {
   if (!config?.variant || typeof config.variant !== "string") {
     throw new Error("selected-tags.yaml must contain a 'variant' string.");
   }
-  if (config.tags && !Array.isArray(config.tags)) {
-    throw new Error("'tags' in selected-tags.yaml must be an array if present.");
+  for (const key of ["tags", "exclude_tags"]) {
+    if (config[key] && !Array.isArray(config[key])) {
+      throw new Error(`'${key}' in selected-tags.yaml must be an array if present.`);
+    }
   }
-  return { variantName: config.variant, tags: config.tags || [] };
+  return {
+    variantName: config.variant,
+    tags: config.tags || [],
+    excludeTags: config.exclude_tags || [],
+  };
 }
 
 // Resolve what to build from `--application <folder>` or
-// `--variant <name> [--tags a,b]`. The application config wins when both are given.
+// `--variant <name> [--tags a,b] [--exclude-tags c,d]`.
+// The application config wins when both are given.
 export function resolveBuildTarget(argv, usage) {
   const rawApplication = getArg(argv, "application");
 
@@ -84,11 +91,12 @@ export function resolveBuildTarget(argv, usage) {
       console.warn("Warning: --variant is ignored when --application is provided.");
     }
     const appDir = getApplicationDir(applicationName);
-    const { variantName, tags } = readApplicationConfig(appDir);
+    const { variantName, tags, excludeTags } = readApplicationConfig(appDir);
     return {
       applicationName,
       variantName,
       tags,
+      excludeTags,
       outputPath: path.join(appDir, "cv.md"),
     };
   }
@@ -98,12 +106,14 @@ export function resolveBuildTarget(argv, usage) {
   const variantName = toPlainName(rawVariant, "variant name");
 
   const tagsArg = getArg(argv, "tags");
+  const excludeArg = getArg(argv, "exclude-tags");
   const outputDir = path.join(repoRoot, "output");
   fs.mkdirSync(outputDir, { recursive: true });
   return {
     applicationName: undefined,
     variantName,
     tags: tagsArg ? parseTagList(tagsArg) : [],
+    excludeTags: excludeArg ? parseTagList(excludeArg) : [],
     outputPath: path.join(outputDir, `${variantName}.md`),
   };
 }

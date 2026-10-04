@@ -6,7 +6,12 @@ import { pathToFileURL } from "url";
 
 import { formatFileBase, formatHeader } from "./lib/formatting.js";
 import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
-import { loadBullets, loadVariant, selectBullets } from "./lib/selection.js";
+import {
+  loadBullets,
+  loadVariant,
+  resolveTags,
+  selectBullets,
+} from "./lib/selection.js";
 import { resolveBuildTarget } from "./lib/cli.js";
 import { prepareCover } from "./prepare-cover.js";
 
@@ -225,7 +230,7 @@ function getCoverTemplateName(variantName, effectiveTags) {
   return "base";
 }
 
-function assembleCV({ variantName, tags, outputPath, applicationName }) {
+function assembleCV({ variantName, tags, excludeTags, outputPath, applicationName }) {
   const profile = getProfile();
   const exp = getExperience();
   const skills = getSkills();
@@ -249,19 +254,19 @@ function assembleCV({ variantName, tags, outputPath, applicationName }) {
         : "CLI tags",
       tags: tags || [],
     },
+    {
+      label: applicationName
+        ? `application '${applicationName}' exclude_tags`
+        : "CLI exclude tags",
+      tags: excludeTags || [],
+    },
   ]);
 
-  const effectiveTags = [
-    ...new Set([
-      ...(variant.include_tags || []),
-      ...(tags && tags.length ? tags : []),
-    ]),
-  ];
-  const selectedBullets = selectBullets(
-    bullets,
-    effectiveTags,
-    variant.exclude_tags || [],
-  );
+  const { include: effectiveTags, exclude } = resolveTags(variant, {
+    tags,
+    excludeTags,
+  });
+  const selectedBullets = selectBullets(bullets, effectiveTags, exclude);
 
   // Compose markdown
   let out = "";
@@ -323,7 +328,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const target = resolveBuildTarget(
       process.argv.slice(2),
-      "Usage: npm run assemble -- --variant <variant> [--tags tag1,tag2] or --application <folder>",
+      "Usage: npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] or --application <folder>",
     );
     assembleCV(target);
   } catch (e) {
