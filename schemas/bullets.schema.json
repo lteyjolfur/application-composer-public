@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Bullet bank (data/bullet-bank/bullets.yaml)",
+  "oneOf": [
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/bullet"
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bullets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bullet"
+          }
+        }
+      },
+      "required": [
+        "bullets"
+      ]
+    }
+  ],
+  "definitions": {
+    "bullet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable unique identifier, used by pin."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The CV bullet. Must be true and defensible in an interview."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "Selection tags; each must be declared in data/tags/tags.yaml."
+        },
+        "section": {
+          "enum": [
+            "experience",
+            "impact",
+            "leadership"
+          ],
+          "description": "Quota group for selection. Default: experience."
+        },
+        "job": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Experience entry id or company to list this bullet under. Default: the first entry."
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "tags"
+      ]
+    }
+  }
+}

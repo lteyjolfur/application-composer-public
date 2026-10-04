@@ -1,0 +1,15 @@
+- id: api
+  text: Acme API bullet.
+  tags: [backend]
+- id: ui
+  text: Acme UI bullet.
+  tags: [frontend]
+- id: refunds
+  text: Globex refunds bullet.
+  tags: [backend, payments]
+  section: impact
+  job: globex
+- id: mentoring
+  text: Acme mentoring bullet.
+  tags: [leadership]
+  section: leadership

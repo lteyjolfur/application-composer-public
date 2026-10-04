@@ -4,8 +4,9 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
-import { formatFileBase, formatHeader } from "./lib/formatting.js";
-import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
+import { formatHeader, resolveCvSections } from "./lib/formatting.js";
+import { groupBulletsByJob, toEntries } from "./lib/experience.js";
+import { repoRoot, readYaml } from "./lib/files.js";
 import {
   loadBullets,
   loadVariant,
@@ -15,9 +16,12 @@ import {
 import { resolveBuildTarget } from "./lib/cli.js";
 import { prepareCover } from "./prepare-cover.js";
 
+// Each entry shows the bullet-bank bullets selected for it, or its own static
+// `bullets` when none were selected.
 function formatExperience(exp, dynamicBullets) {
   let out = "## Experience\n\n";
-  const entries = Array.isArray(exp) ? exp : [exp];
+  const entries = toEntries(exp);
+  const selectedByJob = groupBulletsByJob(entries, dynamicBullets || []);
   entries.forEach((e, idx) => {
     if (!e.role && !e.company) return;
     out += `<div class="job">\n`;
@@ -30,19 +34,14 @@ function formatExperience(exp, dynamicBullets) {
     if (e.location) meta.push(e.location);
     if (meta.length) out += meta.join(" · ") + "\n";
     if (e.summary) out += "\n" + e.summary.trim() + "\n";
-    // Bullets
-    if (idx === 0 && dynamicBullets && dynamicBullets.length) {
-      dynamicBullets.forEach((b) => {
-        out += `\n- ${b.text.trim()}`;
-      });
-      out += "\n";
-    }
-    // Static bullets (if present)
-    if (idx !== 0 && e.bullets && Array.isArray(e.bullets)) {
-      e.bullets.forEach((b) => {
-        if (b && typeof b === "string" && b.trim()) out += `\n- ${b.trim()}`;
-      });
-      out += "\n";
+    const selected = selectedByJob[idx];
+    const lines = selected.length
+      ? selected.map((b) => b.text.trim())
+      : (Array.isArray(e.bullets) ? e.bullets : [])
+          .filter((b) => typeof b === "string" && b.trim())
+          .map((b) => b.trim());
+    if (lines.length) {
+      out += lines.map((line) => `\n- ${line}`).join("") + "\n";
     }
     out += `\n</div>\n\n`;
   });
@@ -54,23 +53,23 @@ function formatProfile(profile) {
 }
 
 
-function getProfile() {
-  const profilePath = path.join(repoRoot, "data/profile/base-profile.yaml");
+function getProfile(root) {
+  const profilePath = path.join(root, "data/profile/base-profile.yaml");
   return readYaml(profilePath);
 }
 
-function getExperience() {
-  const expPath = path.join(repoRoot, "data/experience/experience.yaml");
+function getExperience(root) {
+  const expPath = path.join(root, "data/experience/experience.yaml");
   return readYaml(expPath);
 }
 
-function getSkills() {
-  const skillsPath = path.join(repoRoot, "data/skills/skills.yaml");
+function getSkills(root) {
+  const skillsPath = path.join(root, "data/skills/skills.yaml");
   return readYaml(skillsPath);
 }
 
-function getEducation() {
-  const eduPath = path.join(repoRoot, "data/profile/education.yaml");
+function getEducation(root) {
+  const eduPath = path.join(root, "data/profile/education.yaml");
 
   if (fs.existsSync(eduPath)) {
     return readYaml(eduPath);
@@ -83,8 +82,8 @@ function getLanguages(profile) {
   return Array.isArray(profile.languages) ? profile.languages : [];
 }
 
-function getAllowedTags() {
-  const tagsPath = path.join(repoRoot, "data/tags/tags.yaml");
+function getAllowedTags(root) {
+  const tagsPath = path.join(root, "data/tags/tags.yaml");
   const tagsYaml = readYaml(tagsPath);
 
   if (!tagsYaml || !Array.isArray(tagsYaml.tags)) {
@@ -94,8 +93,8 @@ function getAllowedTags() {
   return new Set(tagsYaml.tags);
 }
 
-function assertKnownTags(tagSources) {
-  const allowedTags = getAllowedTags();
+function assertKnownTags(root, tagSources) {
+  const allowedTags = getAllowedTags(root);
   const errors = [];
 
   for (const { label, tags } of tagSources) {
@@ -162,7 +161,7 @@ function formatEducation(eduYaml) {
     const meta = [];
     if (e.school) meta.push(e.school);
     if (e.start || e.end) {
-      if (e.start && e.end) meta.push(`${e.start}-${e.end}`);
+      if (e.start && e.end) meta.push(`${e.start}–${e.end}`);
       else meta.push(e.start || e.end);
     }
     if (e.location) meta.push(e.location);
@@ -230,16 +229,25 @@ function getCoverTemplateName(variantName, effectiveTags) {
   return "base";
 }
 
-function assembleCV({ variantName, tags, excludeTags, outputPath, applicationName }) {
-  const profile = getProfile();
-  const exp = getExperience();
-  const skills = getSkills();
-  const edu = getEducation();
+function assembleCV({
+  variantName,
+  tags,
+  excludeTags,
+  pin,
+  cvSections,
+  outputPath,
+  applicationName,
+  root = repoRoot, // data folder root; tests point this at a fixture
+}) {
+  const profile = getProfile(root);
+  const exp = getExperience(root);
+  const skills = getSkills(root);
+  const edu = getEducation(root);
   const lang = getLanguages(profile);
-  const bullets = loadBullets(repoRoot);
-  const variant = loadVariant(repoRoot, variantName);
+  const bullets = loadBullets(root);
+  const variant = loadVariant(root, variantName);
 
-  assertKnownTags([
+  assertKnownTags(root, [
     {
       label: `variant '${variantName}' exclude_tags`,
       tags: variant.exclude_tags || [],
@@ -262,20 +270,26 @@ function assembleCV({ variantName, tags, excludeTags, outputPath, applicationNam
     },
   ]);
 
-  const { include: effectiveTags, exclude } = resolveTags(variant, {
+  const { include: effectiveTags, exclude, pin: pinnedIds } = resolveTags(variant, {
     tags,
     excludeTags,
+    pin,
   });
-  const selectedBullets = selectBullets(bullets, effectiveTags, exclude);
+  const selectedBullets = selectBullets(bullets, effectiveTags, exclude, pinnedIds);
 
-  // Compose markdown
-  let out = "";
-  out += formatHeader(profile);
-  out += formatProfile(profile);
-  out += formatExperience(exp, selectedBullets);
-  out += formatSkills(skills);
-  out += formatEducation(edu);
-  out += formatLanguages(lang);
+  // Compose markdown: the header, then the chosen sections in order.
+  const renderers = {
+    profile: () => formatProfile(profile),
+    experience: () => formatExperience(exp, selectedBullets),
+    skills: () => formatSkills(skills),
+    education: () => formatEducation(edu),
+    languages: () => formatLanguages(lang),
+  };
+  const out =
+    formatHeader(profile) +
+    resolveCvSections(variant, cvSections)
+      .map((name) => renderers[name]())
+      .join("");
 
   fs.writeFileSync(outputPath, out);
   console.log(`Assembled CV for variant: ${variantName}`);
@@ -285,26 +299,10 @@ function assembleCV({ variantName, tags, excludeTags, outputPath, applicationNam
     console.log(`Output: ${outputPath}`);
   }
 
-  // New export file naming
-  const context = applicationName || variantName;
-  const baseName = formatFileBase({ profile, context, type: "cv" });
-  const htmlPath = path.join(path.dirname(outputPath), `${baseName}.html`);
-  const pdfPath = path.join(path.dirname(outputPath), `${baseName}.pdf`);
-  const cssPath = getCssPath(outputPath);
-
-  // Helper for relative paths from repo root
-  function rel(filePath) {
-    return path.relative(repoRoot, filePath);
-  }
-  const mdRel = rel(outputPath);
-  const htmlRel = rel(htmlPath);
-  const pdfRel = rel(pdfPath);
-
-  console.log("\nPDF export:");
-  console.log(
-    `pandoc ${mdRel} -o ${htmlRel} --css=${cssPath} --standalone && weasyprint --quiet ${htmlRel} ${pdfRel}`,
-  );
-  console.log("");
+  const target = applicationName
+    ? `--application ${applicationName}`
+    : `--variant ${variantName}`;
+  console.log(`\nExport to HTML and PDF: npm run export -- ${target}\n`);
 
   if (applicationName) {
     const templateName = getCoverTemplateName(variantName, effectiveTags);
@@ -316,6 +314,7 @@ function assembleCV({ variantName, tags, excludeTags, outputPath, applicationNam
 }
 
 export {
+  assembleCV,
   formatExperience,
   formatSkills,
   formatEducation,
@@ -328,7 +327,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const target = resolveBuildTarget(
       process.argv.slice(2),
-      "Usage: npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] or --application <folder>",
+      "Usage: npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] [--pin id1,id2] or --application <folder>",
     );
     assembleCV(target);
   } catch (e) {

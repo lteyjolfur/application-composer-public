@@ -5,6 +5,7 @@ import {
   applicationsDir,
   getApplicationDir,
   getArg,
+  readApplicationConfig,
   resolveBuildTarget,
   toPlainName,
 } from "../scripts/lib/cli.js";
@@ -63,17 +64,6 @@ describe("getApplicationDir", () => {
 });
 
 describe("resolveBuildTarget", () => {
-  it("reads variant and tags from an application", () => {
-    const target = resolveBuildTarget(["--application", "test-app"], "usage");
-    expect(target).toMatchObject({
-      applicationName: "test-app",
-      variantName: "fullstack",
-      tags: ["frontend", "backend", "fullstack"],
-      excludeTags: [],
-      outputPath: path.join(applicationsDir, "test-app", "cv.md"),
-    });
-  });
-
   it("prefers the application and warns when --variant is also given", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const target = resolveBuildTarget(
@@ -110,7 +100,7 @@ describe("resolveBuildTarget", () => {
   });
 });
 
-describe("resolveBuildTarget with application exclude_tags", () => {
+describe("resolveBuildTarget with an application", () => {
   // A throwaway application folder; applications/* is gitignored.
   const name = `vitest-tmp-${process.pid}`;
   const dir = path.join(applicationsDir, name);
@@ -119,12 +109,21 @@ describe("resolveBuildTarget with application exclude_tags", () => {
   beforeAll(() => fs.mkdirSync(dir));
   afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  it("reads exclude_tags", () => {
-    write("variant: fullstack\ntags: [react]\nexclude_tags: [payments]\n");
-    expect(resolveBuildTarget(["--application", name], "usage")).toMatchObject({
+  it("reads the application's config and writes to its cv.md", () => {
+    write("variant: fullstack\ntags: [react]\nexclude_tags: [payments]\npin: [a]\n");
+    expect(resolveBuildTarget(["--application", `${name}/`], "usage")).toMatchObject({
+      applicationName: name,
+      variantName: "fullstack",
       tags: ["react"],
       excludeTags: ["payments"],
+      pin: ["a"],
+      outputPath: path.join(dir, "cv.md"),
     });
+  });
+
+  it("reads company and role, defaulting to empty strings", () => {
+    write("variant: fullstack\ncompany: Acme\n");
+    expect(readApplicationConfig(dir)).toMatchObject({ company: "Acme", role: "" });
   });
 
   it("rejects exclude_tags that is not a list", () => {

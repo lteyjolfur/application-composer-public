@@ -52,7 +52,8 @@ const files = [
   },
   {
     name: "selected-tags.yaml",
-    content: "variant: fullstack\ntags: []\nexclude_tags: []\n",
+    content:
+      "company: \"\"\nrole: \"\"\nvariant: fullstack\ntags: []\nexclude_tags: []\n",
   },
   {
     name: "cv.md",

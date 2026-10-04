@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Skills (data/skills/skills.yaml)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "groups": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "Skill groups, rendered in order as headings."
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "A flat skill list, used when there are no groups."
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "groups"
+      ]
+    },
+    {
+      "required": [
+        "skills"
+      ]
+    }
+  ]
+}
