@@ -61,6 +61,7 @@ npm run validate
 
 - `npm run validate` - Validate source data, tags, variants, and application folder structure
 - `npm run lint` - Lint the scripts with ESLint
+- `npm test` - Run the unit tests with Vitest (`npm run test:watch` to rerun on save)
 - `npm run new-app -- --name <company-role-slug>` - Create a new application folder
 - `npm run assemble -- --application <folder>` - Build a complete CV for an application
 - `npm run assemble -- --variant <variant>` - Build a complete CV for a variant into `output/`
@@ -358,6 +359,11 @@ If Pandoc PDF export fails with LaTeX errors:
 - Use the Markdown to HTML to WeasyPrint flow shown above.
 - Direct Pandoc-to-PDF export uses LaTeX by default and is not required.
 
+If a script reports `Invalid application name` (or variant or template name):
+
+- Pass only the folder or file name, such as `--application example-role`, not a
+  path like `applications/example-role` or `../example-role`.
+
 If validation reports unknown tags:
 
 - Add the tag to `data/tags/tags.yaml`, or replace it with an existing tag.
@@ -371,6 +377,40 @@ If validation reports unknown tags:
 - Do not replace validation with a success-only stub.
 - Every bullet should be defensible in an interview.
 - Improve content quality before adding more automation.
+
+## Commits And Versioning
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```text
+<type>(<optional scope>): <summary in imperative mood>
+```
+
+| Type | Use for | Version bump |
+| --- | --- | --- |
+| `feat` | New behavior a user of the scripts can see | minor |
+| `fix` | A bug fix | patch |
+| `docs` | README, AGENTS.md, comments only | none |
+| `refactor` | Code change with no behavior change | none |
+| `test` | Adding or changing tests | none |
+| `ci` | `.github/workflows/` | none |
+| `chore` | Dependencies, config, housekeeping | none |
+
+Mark a breaking change with `!` after the type (`feat!: ...`) and a
+`BREAKING CHANGE:` footer explaining what users must change. Common scopes are
+`cli`, `validate`, `selection`, `assemble`, `cover`, and `data`.
+
+Examples:
+
+```text
+feat(selection): add per-application exclude_tags
+fix(cli): reject application names that leave applications/
+docs: explain where selected bullets appear
+```
+
+The version in `package.json` follows [Semantic Versioning](https://semver.org/).
+While it is `0.x`, the command-line interface and data formats may still change;
+a breaking change bumps the minor version instead of the major.
 
 ## Next Improvements
 

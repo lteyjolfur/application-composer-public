@@ -42,8 +42,16 @@ edited `cover-letter.md`.
 - `scripts/validate.js` exists to reject bad data. When you add a field or a
   file type, add a check that fails on invalid input.
 
+## Commits
+
+Write commit messages and PR titles as Conventional Commits
+(`fix(cli): ...`, `docs: ...`). Types, scopes, and how they map to version
+bumps: README → "Commits And Versioning".
+
 ## Done means
 
 - `npm run validate` exits 0 after any change to `data/` or `scripts/`.
+- `npm test` and `npm run lint` pass after any change to `scripts/` or `test/`.
+  New or changed behavior in `scripts/` gets a test in `test/`.
 - After a script change, run the affected command against
   `applications/test-app` (or `--variant <name>`) and read the output.

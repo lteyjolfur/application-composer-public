@@ -3,6 +3,7 @@
 import fs from "fs";
 import path from "path";
 import { repoRoot } from "./lib/files.js";
+import { getArg } from "./lib/cli.js";
 
 function printUsage() {
   console.error("Usage: npm run new-app -- --name <company-role-slug>");
@@ -13,18 +14,7 @@ function isValidSlug(slug) {
   return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug);
 }
 
-// Parse args
-let slug;
-for (let i = 2; i < process.argv.length; i++) {
-  let arg = process.argv[i];
-  if (arg === "--name" && process.argv[i + 1]) {
-    slug = process.argv[i + 1];
-    break;
-  } else if (arg.startsWith("--name=")) {
-    slug = arg.slice("--name=".length);
-    break;
-  }
-}
+let slug = getArg(process.argv.slice(2), "name");
 slug = slug ? slug.trim().toLowerCase() : null;
 
 if (!slug) {
