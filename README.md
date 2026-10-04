@@ -28,8 +28,23 @@ Use this repo to tailor applications quickly while keeping the underlying CV dat
 - `output/` - General variant CV output
 - `scripts/` - Build, validation, scaffolding, and formatting logic
 - `docs/` - README images
+- `schemas/` - JSON Schemas for the YAML data files, used by VS Code
 - `style.css` - CV HTML/PDF styling
 - `cover.css` - Cover letter HTML/PDF styling
+
+## Editing In VS Code
+
+Open the repository folder in VS Code and install the recommended
+[YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
+when prompted. `.vscode/settings.json` maps every data file to a JSON Schema in
+`schemas/`, so while you edit you get:
+
+- autocomplete and hover descriptions for every field
+- red underlines for typos (`summery`, `varient`), missing required fields,
+  and invalid values such as an unknown bullet `section` or `cv_sections` name
+
+Tags, pinned ids, and `job` references depend on other files, so only
+`npm run validate` checks those.
 
 ## Personalize This Repository
 
@@ -64,9 +79,10 @@ npm run validate
 - `npm test` - Run the unit tests with Vitest (`npm run test:watch` to rerun on save)
 - `npm run new-app -- --name <company-role-slug>` - Create a new application folder
 - `npm run assemble -- --application <folder>` - Build a complete CV for an application
-- `npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d]` - Build a complete CV for a variant into `output/`
+- `npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d] [--pin id1,id2]` - Build a complete CV for a variant into `output/`
 - `npm run build -- --variant <variant>` - Build a minimal bullet-only CV variant
 - `npm run prepare-cover -- --application <folder> --template <template>` - Generate a cover letter from a template
+- `npm run export -- --application <folder>` - Export the CV and cover letter to HTML and PDF
 
 ## Common Workflow
 
@@ -94,7 +110,11 @@ npm run prepare-cover -- --application example-role --template frontend
 ```
 
 6. Review and manually edit `cv.md` and `cover-letter.md`.
-7. Export to HTML/PDF if needed.
+7. Export to HTML and PDF:
+
+```sh
+npm run export -- --application example-role
+```
 
 ## Application Folders
 
@@ -130,11 +150,20 @@ applications/
 Example `selected-tags.yaml`:
 
 ```yaml
+company: Example Company   # fills <COMPANY> in the cover letter
+role: Frontend Developer   # fills <ROLE> in the cover letter
 variant: fullstack
 tags:            # added to the variant's include_tags
   - authentication
 exclude_tags:    # added to the variant's exclude_tags
   - payments
+pin:             # bullet ids always included, listed first
+  - example-frontend-achievement
+cv_sections:     # which CV sections to show, in order (overrides the variant)
+  - profile
+  - experience
+  - skills
+  - languages
 ```
 
 - `tags` makes more bullets eligible for this application.
@@ -142,7 +171,11 @@ exclude_tags:    # added to the variant's exclude_tags
   matches the variant. Use it to tailor one application without editing a
   shared variant, for example to leave out payments work when applying to a
   payments competitor.
-- A tag cannot be in both lists; `npm run validate` reports it.
+- `pin` includes bullets by `id` no matter their tags, ahead of the scored
+  ones. Use it when you know exactly which achievement this job needs.
+- A tag cannot be in both `tags` and `exclude_tags`, and an application cannot
+  pin a bullet that its own `exclude_tags` would drop; `npm run validate`
+  reports both.
 
 If both `--application` and `--variant` are passed to `assemble` or `build`, the application config wins.
 
@@ -155,6 +188,11 @@ Each variant has:
 - `variant` - The CLI name, such as `frontend`, `fullstack`, `leadership`, or `testautomation`
 - `include_tags` - Tags used to select bullets
 - `exclude_tags` - Tags that disqualify matching bullets
+- `pin` - Optional bullet ids always included in this variant
+- `cv_sections` - Optional list of CV sections to show, in order. Choose from
+  `profile`, `experience`, `skills`, `education`, `languages`; the default is
+  all five in that order. An application's `cv_sections` replaces the variant's.
+  Use it to drop education or lead with skills.
 
 Example:
 
@@ -178,6 +216,7 @@ Each bullet should have:
 - `text` - CV bullet text
 - `tags` - Selection tags
 - `section` - Optional section, usually `experience`, `impact`, or `leadership`
+- `job` - Optional experience entry (`id` or `company`) to list the bullet under; defaults to the first entry
 
 Example:
 
@@ -202,6 +241,9 @@ selection logic.
 
 ### How bullets are chosen
 
+0. **Pinned bullets** from the variant's and the application's `pin` (or
+   `--pin id1,id2`) come first, in that order. They ignore tags and exclusions,
+   count toward section quotas, and are all included even past the cap.
 1. **Effective tags** are the variant's `include_tags` plus the application's
    `tags` (or `--tags` on the command line). **Excluded tags** are the variant's
    `exclude_tags` plus the application's `exclude_tags` (or `--exclude-tags`).
@@ -224,29 +266,42 @@ headings.
 
 ### Where selected bullets appear
 
-`assemble` places the selected bullet-bank bullets under the **first entry in
-`data/experience/experience.yaml` only** (your current or most recent role).
-Every other entry shows its own static `bullets` list instead:
+`assemble` places each selected bullet under the job it names with `job`, and
+bullets without `job` under the **first entry** in
+`data/experience/experience.yaml` (your current or most recent role).
+
+`job` matches an experience entry's `id`, or else its `company`. Give entries
+an `id` when you held several roles at one company, since `job` must match
+exactly one entry (`npm run validate` checks this):
 
 ```yaml
-- role: Senior Developer        # first entry: gets bullet-bank bullets
+# data/experience/experience.yaml
+- role: Senior Developer
   company: Current Company
-- role: Developer               # older entries: use their static bullets
+- id: previous-dev            # optional; needed only to tell roles apart
+  role: Developer
   company: Previous Company
-  bullets:
-    - Delivered a merchant onboarding flow that reduced sign-up time from two days to two hours.
+  bullets:                    # static fallback for this job
+    - Delivered a merchant onboarding flow that cut sign-up time from two days to two hours.
+
+# data/bullet-bank/bullets.yaml
+- id: refunds-api
+  text: Built the refunds API handling 40,000 refunds a month.
+  tags: [backend, payments]
+  job: previous-dev           # or: job: Previous Company
 ```
 
-Consequences to plan around:
+Each job shows **either** the bullet-bank bullets selected for it **or**, when
+none were selected, its own static `bullets`. This applies to every entry,
+including the first.
 
-- Bullet-bank bullets are not linked to an employer, so they are always
-  presented as achievements in your first role. Keep older-role achievements
-  as static `bullets` on that entry, not in the bullet bank.
-- Static `bullets` on the **first** entry are ignored, even when no bullet-bank
-  bullet matched. If an application selects nothing, the first role shows only
-  its summary.
-- Older roles are not tailored per application; their static bullets appear
-  in every CV.
+Things to plan around:
+
+- The 4-bullet cap is shared across all jobs, so older jobs compete with your
+  current role for slots. Pin a bullet to guarantee it a place.
+- Selecting one bullet for an older job replaces that job's static bullets
+  rather than adding to them. Keep the achievements you always want for that
+  job in the bullet bank, linked with `job`, and pin them.
 
 ### Duplicate detection
 
@@ -283,8 +338,10 @@ npm run prepare-cover -- --application example-role --template frontend
 
 The script prepends the profile header and refuses to overwrite a cover letter that already has real content.
 
-Templates are short English skeletons. Replace each `<PLACEHOLDER>` with
-text specific to the job; to write in another language, translate the
+Templates are short English skeletons. `prepare-cover` fills `<COMPANY>` and
+`<ROLE>` from the application's `selected-tags.yaml` and `<YOUR_NAME>` from
+your profile. Placeholders without a value, such as `<COMPANY_MOTIVATION>`,
+stay in place: replace each with text specific to the job; to write in another language, translate the
 templates once and keep the placeholders.
 
 `assemble --application` also writes a cover letter if none exists yet,
@@ -308,66 +365,57 @@ Validation checks:
 - Variants have valid, unique names and include tags
 - Application folders contain required files
 - Application selected variants exist, and no tag is in both an application's `tags` and `exclude_tags`
+- Pinned bullet ids exist, and an application does not pin a bullet its own `exclude_tags` drops
 - Tags used by bullets, variants, and applications exist in `data/tags/tags.yaml`
-- Profile, experience, and skills have the required shape
+- Profile, experience, and skills have the required shape; experience `id`s are unique
+- Every bullet `job` matches exactly one experience entry
 
 Generated `.html` and `.pdf` exports are allowed alongside the core source files in application folders.
 
 ## Exporting HTML And PDF
 
-The project generates Markdown by default. HTML and PDF export are handled with external CLI tools.
-
-Recommended tools:
-
-- Pandoc - Converts Markdown to HTML
-- WeasyPrint - Converts HTML to PDF
-
-Install on macOS:
+`npm run export` converts the Markdown to HTML with Pandoc and then to PDF with
+WeasyPrint. Install both first; on macOS:
 
 ```sh
-brew install pandoc
-brew install weasyprint
+brew install pandoc weasyprint
 ```
 
-Example CV export:
+Export an application's CV and cover letter:
 
 ```sh
-pandoc applications/example-role/cv.md \
-  -o applications/example-role/cv.html \
-  --css=../../style.css \
-  --standalone
-
-weasyprint applications/example-role/cv.html \
-  applications/example-role/cv.pdf
+npm run export -- --application example-role
 ```
 
-Example cover letter export:
+Options:
 
-```sh
-pandoc applications/example-role/cover-letter.md \
-  -o applications/example-role/cover-letter.html \
-  --css=../../style.css \
-  --css=../../cover.css \
-  --standalone
+- `--only cv` or `--only cover` - export just one document
+- `--variant <variant>` instead of `--application` - export `output/<variant>.md`
+- `--draft` - export even if placeholders are left (prints a warning instead)
 
-weasyprint applications/example-role/cover-letter.html \
-  applications/example-role/cover-letter.pdf
-```
+Before exporting anything, `export` checks each document and refuses if it
+still contains template text, listing every hit with its line number:
 
-The `assemble` and `prepare-cover` scripts print ready-to-run export commands after writing Markdown.
+- unfilled `<PLACEHOLDER>` tokens, such as `<COMPANY_MOTIVATION>`
+- `[EXAMPLE ...]` bullets and instructions like "Replace this" or "replace or remove"
+- template profile data: `Your Name`, `Your Location`, `you@example.com`
+- the stub `cv.md` and `cover-letter.md` written by `new-app`
+
+Files are written next to the Markdown, named
+`<Your_Name>_<Application>_CV.pdf` and `<Your_Name>_<Application>_Cover_Letter.pdf`
+(plus the intermediate `.html`). The CV uses `style.css`; the cover letter adds
+`cover.css`. `assemble` and `prepare-cover` print the export command to run next.
 
 ## Troubleshooting
 
+If `npm run export` says `pandoc` or `weasyprint` is not installed:
+
+- Install it (see "Exporting HTML And PDF") and check it runs from your shell.
+
 If the PDF looks unstyled:
 
-- Check that the generated HTML links to the correct CSS path.
-- From `applications/<name>/cv.html`, the relative path to root `style.css` is `../../style.css`.
-- Cover letters should include both `../../style.css` and `../../cover.css`.
-
-If Pandoc PDF export fails with LaTeX errors:
-
-- Use the Markdown to HTML to WeasyPrint flow shown above.
-- Direct Pandoc-to-PDF export uses LaTeX by default and is not required.
+- Export with `npm run export` rather than running Pandoc by hand; it computes the stylesheet paths.
+- The generated HTML should link `../../style.css` (and `../../cover.css` for cover letters).
 
 If a script reports `Invalid application name` (or variant or template name):
 

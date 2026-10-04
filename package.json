@@ -10,7 +10,8 @@
     "prepare-cover": "node scripts/prepare-cover.js",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "export": "node scripts/export.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

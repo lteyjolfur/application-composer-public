@@ -3,38 +3,17 @@
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
-import { formatHeader, formatFileBase } from "./lib/formatting.js";
-import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
-import { getApplicationDir, getArg, toPlainName } from "./lib/cli.js";
+import { fillPlaceholders, formatHeader } from "./lib/formatting.js";
+import { repoRoot, readYaml } from "./lib/files.js";
+import {
+  getApplicationDir,
+  getArg,
+  readApplicationConfig,
+  toPlainName,
+} from "./lib/cli.js";
 
 const PLACEHOLDER_COVER_RE =
   /^# Cover Letter\s+Draft or generated cover letter goes here\./m;
-
-function rel(filePath) {
-  return path.relative(repoRoot, filePath);
-}
-
-function printCoverExportCommand({ profile, applicationName, coverPath }) {
-  const appDir = path.dirname(coverPath);
-  const baseName = formatFileBase({
-    profile,
-    context: applicationName,
-    type: "cover",
-  });
-  const htmlPath = path.join(appDir, `${baseName}.html`);
-  const pdfPath = path.join(appDir, `${baseName}.pdf`);
-  const cssPath = getCssPath(coverPath);
-  const coverCssPath = getCssPath(coverPath, "cover.css");
-  const mdRel = rel(coverPath);
-  const htmlRel = rel(htmlPath);
-  const pdfRel = rel(pdfPath);
-
-  console.log("\nPDF export:");
-  console.log(
-    `pandoc ${mdRel} -o ${htmlRel} --css=${cssPath} --css=${coverCssPath} --standalone && weasyprint --quiet ${htmlRel} ${pdfRel}`,
-  );
-  console.log("");
-}
 
 export function prepareCover({
   applicationName,
@@ -78,12 +57,22 @@ export function prepareCover({
   const profile = readYaml(profilePath);
   const header = formatHeader(profile);
   const template = fs.readFileSync(templatePath, "utf8");
-  const out = header + template.replace(/^# Cover Letter\s*/i, "");
+  const { company, role } = fs.existsSync(path.join(appDir, "selected-tags.yaml"))
+    ? readApplicationConfig(appDir)
+    : {};
+  const body = fillPlaceholders(template.replace(/^# Cover Letter\s*/i, ""), {
+    COMPANY: company,
+    ROLE: role,
+    YOUR_NAME: profile.name,
+  });
+  const out = header + body;
   fs.writeFileSync(coverPath, out);
   console.log(
     `Wrote cover-letter.md for application: ${applicationName} using template: ${templateName}`,
   );
-  printCoverExportCommand({ profile, applicationName, coverPath });
+  console.log(
+    `\nExport to HTML and PDF: npm run export -- --application ${applicationName} --only cover\n`,
+  );
 
   return { coverPath, skipped: false, templateName };
 }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatFileBase, formatHeader } from "../scripts/lib/formatting.js";
+import {
+  CV_SECTIONS,
+  fillPlaceholders,
+  formatFileBase,
+  formatHeader,
+  resolveCvSections,
+} from "../scripts/lib/formatting.js";
 import {
   formatEducation,
   formatExperience,
@@ -40,21 +46,40 @@ describe("formatFileBase", () => {
 
 describe("formatExperience", () => {
   const experience = [
-    { role: "Senior Dev", company: "Acme", start: 2021, end: "Present", bullets: ["Ignored static."] },
-    { role: "Dev", company: "Globex", start: 2017, end: 2021, bullets: ["Static older bullet."] },
+    { role: "Senior Dev", company: "Acme", start: 2021, end: "Present", bullets: ["Static current bullet."] },
+    { id: "globex", role: "Dev", company: "Globex", start: 2017, end: 2021, bullets: ["Static older bullet."] },
   ];
+  const jobs = (out) => out.split('<div class="job">').slice(1);
 
-  it("puts selected bullets under the first entry only", () => {
-    const out = formatExperience(experience, [{ text: "Selected bullet.\n" }]);
-    const [first, second] = out.split('<div class="job">').slice(1);
+  it("puts bullets without a job under the first entry, replacing its static bullets", () => {
+    const [first, second] = jobs(formatExperience(experience, [{ text: "Selected bullet.\n" }]));
     expect(first).toContain("- Selected bullet.");
-    expect(second).not.toContain("Selected bullet.");
+    expect(first).not.toContain("Static current bullet.");
+    expect(second).toContain("- Static older bullet.");
   });
 
-  it("uses static bullets for older entries and ignores them on the first", () => {
-    const out = formatExperience(experience, []);
-    expect(out).toContain("- Static older bullet.");
-    expect(out).not.toContain("Ignored static.");
+  it("puts a bullet under the job it names, by id or company", () => {
+    const [first, second] = jobs(
+      formatExperience(experience, [
+        { text: "Older win.", job: "globex" },
+        { text: "Current win.", job: "Acme" },
+      ]),
+    );
+    expect(first).toContain("- Current win.");
+    expect(second).toContain("- Older win.");
+    expect(second).not.toContain("Static older bullet.");
+  });
+
+  it("falls back to static bullets on every entry, including the first", () => {
+    const [first, second] = jobs(formatExperience(experience, []));
+    expect(first).toContain("- Static current bullet.");
+    expect(second).toContain("- Static older bullet.");
+  });
+
+  it("rejects a bullet whose job matches nothing", () => {
+    expect(() => formatExperience(experience, [{ text: "x", job: "Initech" }])).toThrow(
+      /does not match any experience entry/,
+    );
   });
 
   it("formats the date range and location", () => {
@@ -75,11 +100,11 @@ describe("formatSkills", () => {
 });
 
 describe("formatEducation", () => {
-  it("joins school, years, and location", () => {
+  it("joins school, years (with an en dash, like experience), and location", () => {
     const out = formatEducation({
       education: [{ degree: "BSc", school: "Example University", start: 2013, end: 2016, location: "Lund" }],
     });
-    expect(out).toContain("### BSc\nExample University · 2013-2016 · Lund\n");
+    expect(out).toContain("### BSc\nExample University · 2013–2016 · Lund\n");
   });
 });
 
@@ -107,5 +132,41 @@ describe("getCoverTemplateName", () => {
     ["custom", ["react"], "base"],
   ])("variant %s with tags %j picks %s", (variant, tags, expected) => {
     expect(getCoverTemplateName(variant, tags)).toBe(expected);
+  });
+});
+
+describe("fillPlaceholders", () => {
+  it("replaces placeholders that have a value", () => {
+    expect(fillPlaceholders("<ROLE> at <COMPANY>", { ROLE: "Developer", COMPANY: "Acme" })).toBe(
+      "Developer at Acme",
+    );
+  });
+
+  it("leaves placeholders without a value visible", () => {
+    expect(
+      fillPlaceholders("<ROLE> at <COMPANY> because <COMPANY_MOTIVATION>", { COMPANY: "Acme", ROLE: " " }),
+    ).toBe("<ROLE> at Acme because <COMPANY_MOTIVATION>");
+  });
+
+  it("does not touch HTML tags or lowercase angle brackets", () => {
+    expect(fillPlaceholders('<div class="job"> <name>', { NAME: "x" })).toBe('<div class="job"> <name>');
+  });
+});
+
+describe("resolveCvSections", () => {
+  it("defaults to every section in the standard order", () => {
+    expect(resolveCvSections({})).toEqual(CV_SECTIONS);
+    expect(CV_SECTIONS).toEqual(["profile", "experience", "skills", "education", "languages"]);
+  });
+
+  it("uses the variant's cv_sections", () => {
+    expect(resolveCvSections({ cv_sections: ["experience", "skills"] })).toEqual(["experience", "skills"]);
+  });
+
+  it("lets the application override the variant", () => {
+    expect(resolveCvSections({ cv_sections: ["experience"] }, ["profile", "experience"])).toEqual([
+      "profile",
+      "experience",
+    ]);
   });
 });

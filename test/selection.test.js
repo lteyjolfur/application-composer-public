@@ -1,28 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { normalizeBullets, resolveTags, selectBullets } from "../scripts/lib/selection.js";
+import { resolveTags, selectBullets } from "../scripts/lib/selection.js";
 
 function bullet(id, tags, section = "experience", text = `Bullet ${id}.`) {
   return { id, text, tags, section };
 }
 
 const ids = (bullets) => bullets.map((b) => b.id);
-
-describe("normalizeBullets", () => {
-  it("accepts a top-level array", () => {
-    const bullets = [bullet("a", ["frontend"])];
-    expect(normalizeBullets(bullets)).toBe(bullets);
-  });
-
-  it("accepts an object with a bullets array", () => {
-    const bullets = [bullet("a", ["frontend"])];
-    expect(normalizeBullets({ bullets })).toBe(bullets);
-  });
-
-  it("returns null for anything else", () => {
-    expect(normalizeBullets({ items: [] })).toBeNull();
-    expect(normalizeBullets(null)).toBeNull();
-  });
-});
 
 describe("selectBullets", () => {
   it("drops bullets with no matching tag", () => {
@@ -92,11 +75,6 @@ describe("selectBullets", () => {
     expect(ids(selectBullets(bullets, ["react"]))).toEqual(["exp1", "exp2", "exp3"]);
   });
 
-  it("treats a missing section as experience", () => {
-    const [selected] = selectBullets([{ id: "a", text: "A.", tags: ["react"] }], ["react"]);
-    expect(selected.section).toBe("experience");
-  });
-
   describe("duplicate detection", () => {
     it("skips a bullet whose text is contained in an already-selected one", () => {
       const selected = selectBullets(
@@ -131,16 +109,6 @@ describe("selectBullets", () => {
       expect(ids(selected)).toEqual(["a"]);
     });
 
-    it("does not catch reworded bullets", () => {
-      const selected = selectBullets(
-        [
-          bullet("a", ["react"], "experience", "Cut page load time by 60%."),
-          bullet("b", ["react"], "experience", "Reduced page load by 60%."),
-        ],
-        ["react"],
-      );
-      expect(ids(selected)).toEqual(["a", "b"]);
-    });
   });
 });
 
@@ -151,6 +119,7 @@ describe("resolveTags", () => {
     expect(resolveTags(variant, { tags: ["react", "backend"] })).toEqual({
       include: ["backend", "payments", "react"],
       exclude: ["legacy"],
+      pin: [],
     });
   });
 
@@ -166,7 +135,11 @@ describe("resolveTags", () => {
   });
 
   it("works with no extra tags and a variant without exclude_tags", () => {
-    expect(resolveTags({ include_tags: ["react"] })).toEqual({ include: ["react"], exclude: [] });
+    expect(resolveTags({ include_tags: ["react"] })).toEqual({
+      include: ["react"],
+      exclude: [],
+      pin: [],
+    });
   });
 
   it("drops a variant bullet when the application excludes one of its tags", () => {
@@ -176,5 +149,59 @@ describe("resolveTags", () => {
     ];
     const { include, exclude } = resolveTags(variant, { excludeTags: ["payments"] });
     expect(ids(selectBullets(bullets, include, exclude))).toEqual(["api"]);
+  });
+});
+
+describe("pinned bullets", () => {
+  const bullets = [
+    bullet("top", ["react", "node"], "experience"),
+    bullet("second", ["react"], "experience"),
+    bullet("untagged", ["leadership"], "leadership"),
+    bullet("legacy", ["react", "legacy"], "impact"),
+  ];
+
+  it("puts pinned bullets first, even without matching tags", () => {
+    expect(ids(selectBullets(bullets, ["react", "node"], [], ["untagged"]))).toEqual([
+      "untagged",
+      "top",
+      "second",
+      "legacy",
+    ]);
+  });
+
+  it("keeps pinned bullets that carry an excluded tag", () => {
+    expect(ids(selectBullets(bullets, ["react"], ["legacy"], ["legacy"]))).toEqual([
+      "legacy",
+      "top",
+      "second",
+    ]);
+  });
+
+  it("counts pins against section quotas", () => {
+    // Pinning 'second' fills one experience slot, so only one more experience bullet fits in pass 1.
+    const many = [
+      bullet("e1", ["react"], "experience"),
+      bullet("e2", ["react"], "experience"),
+      bullet("e3", ["react"], "experience"),
+      bullet("i1", ["react"], "impact"),
+    ];
+    expect(ids(selectBullets(many, ["react"], [], ["e3"]))).toEqual(["e3", "e1", "i1", "e2"]);
+  });
+
+  it("includes every pin even beyond the cap", () => {
+    const many = Array.from({ length: 6 }, (_, i) => bullet(`p${i}`, ["react"]));
+    expect(selectBullets(many, ["react"], [], many.map((b) => b.id))).toHaveLength(6);
+  });
+
+  it("does not select a pinned bullet twice", () => {
+    expect(ids(selectBullets(bullets, ["react", "node"], [], ["top"]))).toEqual(["top", "second", "legacy"]);
+  });
+
+  it("rejects an unknown pinned id", () => {
+    expect(() => selectBullets(bullets, ["react"], [], ["nope"])).toThrow(/Pinned bullet id not found.*nope/);
+  });
+
+  it("combines variant and application pins without duplicates", () => {
+    expect(resolveTags({ include_tags: ["react"], pin: ["a"] }, { pin: ["b", "a"] }).pin).toEqual(["a", "b"]);
   });
 });

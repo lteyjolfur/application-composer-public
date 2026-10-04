@@ -60,6 +60,12 @@ describe("validateVariant", () => {
     ).toEqual([]);
   });
 
+  it("checks the variant's cv_sections", () => {
+    expect(
+      validateVariant({ variant: "fe", include_tags: ["frontend"], cv_sections: ["hobbies"] }, "fe.yaml", allowed),
+    ).toHaveLength(1);
+  });
+
   it("rejects missing name, empty include_tags, and unknown exclude tags", () => {
     const errors = validateVariant(
       { include_tags: [], exclude_tags: ["golang"] },
@@ -128,6 +134,37 @@ describe("validateApplicationConfig", () => {
   it("rejects a tag that is both included and excluded", () => {
     expect(check({ variant: "fullstack", tags: ["frontend"], exclude_tags: ["frontend"] })).toEqual([
       "application acme: tag 'frontend' is in both tags and exclude_tags.",
+    ]);
+  });
+
+  it("accepts company and role strings and rejects other types", () => {
+    expect(check({ variant: "fullstack", company: "Acme", role: "" })).toEqual([]);
+    expect(check({ variant: "fullstack", company: 42 })).toEqual([
+      "application acme: 'company' must be a string if present.",
+    ]);
+  });
+
+  it("checks pinned ids exist and are not excluded by the application", () => {
+    const bulletsById = new Map([["pay", { id: "pay", tags: ["backend"] }]]);
+    const pinCheck = (config) =>
+      validateApplicationConfig({ variant: "fullstack", ...config }, "acme", variants, allowed, bulletsById);
+    expect(pinCheck({ pin: ["pay"] })).toEqual([]);
+    expect(pinCheck({ pin: ["nope"] })).toEqual(["application acme.pin: unknown bullet id 'nope'."]);
+    expect(pinCheck({ pin: ["pay"], exclude_tags: ["backend"] })).toEqual([
+      "application acme: pinned bullet 'pay' has excluded tag 'backend'.",
+    ]);
+  });
+
+  it("checks cv_sections names, duplicates, and shape", () => {
+    expect(check({ variant: "fullstack", cv_sections: ["experience", "skills"] })).toEqual([]);
+    expect(check({ variant: "fullstack", cv_sections: ["projects"] }).join("\n")).toMatch(
+      /'projects' must be one of: profile, experience/,
+    );
+    expect(check({ variant: "fullstack", cv_sections: ["skills", "skills"] })).toEqual([
+      "application acme.cv_sections lists 'skills' twice.",
+    ]);
+    expect(check({ variant: "fullstack", cv_sections: [] })).toEqual([
+      "application acme.cv_sections must be a non-empty array if present.",
     ]);
   });
 });

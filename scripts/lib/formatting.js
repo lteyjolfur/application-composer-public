@@ -1,6 +1,15 @@
 // scripts/lib/formatting.js
 // Shared formatting utilities for CV and cover letter
 
+// CV sections in their default order; variants and applications can pick a subset
+// or reorder them with `cv_sections`.
+const CV_SECTIONS = ["profile", "experience", "skills", "education", "languages"];
+
+// The application's cv_sections win over the variant's; otherwise the default.
+function resolveCvSections(variant, applicationSections) {
+  return applicationSections || variant.cv_sections || CV_SECTIONS;
+}
+
 function formatHeader(profile) {
   let out = `# ${profile.name || ""}`.trim() + "\n\n";
   let contact = [];
@@ -45,4 +54,19 @@ function formatFileBase({ profile, context, type }) {
   return `${name}_${ctx}_${suffix}`;
 }
 
-export { formatHeader, formatFileBase };
+// Replace `<KEY>` placeholders whose value is a non-empty string; leave the rest
+// in place so they stay visible for manual editing.
+function fillPlaceholders(text, values) {
+  return text.replace(/<([A-Z][A-Z0-9_]*)>/g, (match, key) => {
+    const value = values[key];
+    return typeof value === "string" && value.trim() ? value.trim() : match;
+  });
+}
+
+export {
+  CV_SECTIONS,
+  resolveCvSections,
+  formatHeader,
+  formatFileBase,
+  fillPlaceholders,
+};

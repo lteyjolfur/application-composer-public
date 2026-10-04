@@ -37,7 +37,7 @@ Replace with your engineering practices
 ## Education
 
 ### Example degree — replace or remove
-Example institution — replace or remove · YYYY-YYYY · Example location — replace or remove
+Example institution — replace or remove · YYYY–YYYY · Example location — replace or remove
 
 Replace this text with factual details about your education.
 

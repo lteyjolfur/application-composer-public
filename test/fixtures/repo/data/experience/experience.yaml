@@ -1,0 +1,13 @@
+- role: Senior Developer
+  company: Acme Logistics
+  start: 2021
+  end: Present
+  bullets:
+    - Acme static bullet.
+- id: globex
+  role: Developer
+  company: Globex Payments
+  start: 2017
+  end: 2021
+  bullets:
+    - Globex static bullet.
