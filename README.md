@@ -61,6 +61,7 @@ npm run validate
 
 - `npm run validate` - Validate source data, tags, variants, and application folder structure
 - `npm run lint` - Lint the scripts with ESLint
+- `npm test` - Run the unit tests with Vitest (`npm run test:watch` to rerun on save)
 - `npm run new-app -- --name <company-role-slug>` - Create a new application folder
 - `npm run assemble -- --application <folder>` - Build a complete CV for an application
 - `npm run assemble -- --variant <variant>` - Build a complete CV for a variant into `output/`
