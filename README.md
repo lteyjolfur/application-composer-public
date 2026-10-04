@@ -201,6 +201,7 @@ Each bullet should have:
 - `text` - CV bullet text
 - `tags` - Selection tags
 - `section` - Optional section, usually `experience`, `impact`, or `leadership`
+- `job` - Optional experience entry (`id` or `company`) to list the bullet under; defaults to the first entry
 
 Example:
 
@@ -250,29 +251,42 @@ headings.
 
 ### Where selected bullets appear
 
-`assemble` places the selected bullet-bank bullets under the **first entry in
-`data/experience/experience.yaml` only** (your current or most recent role).
-Every other entry shows its own static `bullets` list instead:
+`assemble` places each selected bullet under the job it names with `job`, and
+bullets without `job` under the **first entry** in
+`data/experience/experience.yaml` (your current or most recent role).
+
+`job` matches an experience entry's `id`, or else its `company`. Give entries
+an `id` when you held several roles at one company, since `job` must match
+exactly one entry (`npm run validate` checks this):
 
 ```yaml
-- role: Senior Developer        # first entry: gets bullet-bank bullets
+# data/experience/experience.yaml
+- role: Senior Developer
   company: Current Company
-- role: Developer               # older entries: use their static bullets
+- id: previous-dev            # optional; needed only to tell roles apart
+  role: Developer
   company: Previous Company
-  bullets:
-    - Delivered a merchant onboarding flow that reduced sign-up time from two days to two hours.
+  bullets:                    # static fallback for this job
+    - Delivered a merchant onboarding flow that cut sign-up time from two days to two hours.
+
+# data/bullet-bank/bullets.yaml
+- id: refunds-api
+  text: Built the refunds API handling 40,000 refunds a month.
+  tags: [backend, payments]
+  job: previous-dev           # or: job: Previous Company
 ```
 
-Consequences to plan around:
+Each job shows **either** the bullet-bank bullets selected for it **or**, when
+none were selected, its own static `bullets`. This applies to every entry,
+including the first.
 
-- Bullet-bank bullets are not linked to an employer, so they are always
-  presented as achievements in your first role. Keep older-role achievements
-  as static `bullets` on that entry, not in the bullet bank.
-- Static `bullets` on the **first** entry are ignored, even when no bullet-bank
-  bullet matched. If an application selects nothing, the first role shows only
-  its summary.
-- Older roles are not tailored per application; their static bullets appear
-  in every CV.
+Things to plan around:
+
+- The 4-bullet cap is shared across all jobs, so older jobs compete with your
+  current role for slots. Pin a bullet to guarantee it a place.
+- Selecting one bullet for an older job replaces that job's static bullets
+  rather than adding to them. Keep the achievements you always want for that
+  job in the bullet bank, linked with `job`, and pin them.
 
 ### Duplicate detection
 
@@ -338,7 +352,8 @@ Validation checks:
 - Application selected variants exist, and no tag is in both an application's `tags` and `exclude_tags`
 - Pinned bullet ids exist, and an application does not pin a bullet its own `exclude_tags` drops
 - Tags used by bullets, variants, and applications exist in `data/tags/tags.yaml`
-- Profile, experience, and skills have the required shape
+- Profile, experience, and skills have the required shape; experience `id`s are unique
+- Every bullet `job` matches exactly one experience entry
 
 Generated `.html` and `.pdf` exports are allowed alongside the core source files in application folders.
 

@@ -5,6 +5,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 
 import { formatHeader, resolveCvSections } from "./lib/formatting.js";
+import { groupBulletsByJob, toEntries } from "./lib/experience.js";
 import { repoRoot, readYaml } from "./lib/files.js";
 import {
   loadBullets,
@@ -15,9 +16,12 @@ import {
 import { resolveBuildTarget } from "./lib/cli.js";
 import { prepareCover } from "./prepare-cover.js";
 
+// Each entry shows the bullet-bank bullets selected for it, or its own static
+// `bullets` when none were selected.
 function formatExperience(exp, dynamicBullets) {
   let out = "## Experience\n\n";
-  const entries = Array.isArray(exp) ? exp : [exp];
+  const entries = toEntries(exp);
+  const selectedByJob = groupBulletsByJob(entries, dynamicBullets || []);
   entries.forEach((e, idx) => {
     if (!e.role && !e.company) return;
     out += `<div class="job">\n`;
@@ -30,19 +34,14 @@ function formatExperience(exp, dynamicBullets) {
     if (e.location) meta.push(e.location);
     if (meta.length) out += meta.join(" · ") + "\n";
     if (e.summary) out += "\n" + e.summary.trim() + "\n";
-    // Bullets
-    if (idx === 0 && dynamicBullets && dynamicBullets.length) {
-      dynamicBullets.forEach((b) => {
-        out += `\n- ${b.text.trim()}`;
-      });
-      out += "\n";
-    }
-    // Static bullets (if present)
-    if (idx !== 0 && e.bullets && Array.isArray(e.bullets)) {
-      e.bullets.forEach((b) => {
-        if (b && typeof b === "string" && b.trim()) out += `\n- ${b.trim()}`;
-      });
-      out += "\n";
+    const selected = selectedByJob[idx];
+    const lines = selected.length
+      ? selected.map((b) => b.text.trim())
+      : (Array.isArray(e.bullets) ? e.bullets : [])
+          .filter((b) => typeof b === "string" && b.trim())
+          .map((b) => b.trim());
+    if (lines.length) {
+      out += lines.map((line) => `\n- ${line}`).join("") + "\n";
     }
     out += `\n</div>\n\n`;
   });

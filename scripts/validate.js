@@ -6,6 +6,7 @@ import { pathToFileURL } from "url";
 import { repoRoot, readYaml } from "./lib/files.js";
 import { normalizeBullets, SECTION_ORDER } from "./lib/selection.js";
 import { CV_SECTIONS } from "./lib/formatting.js";
+import { resolveJobIndex, toEntries } from "./lib/experience.js";
 
 const PATHS = {
   tags: "data/tags/tags.yaml",
@@ -283,6 +284,21 @@ function validateProfile(profile) {
   return errors;
 }
 
+// Each bullet's `job` must point at exactly one experience entry.
+function validateBulletJobs(bullets, experience) {
+  const entries = toEntries(experience);
+  return bullets.flatMap((b, i) => {
+    if (!b || b.job === undefined) return [];
+    if (!isNonEmptyString(b.job)) return [`bullet[${i}].job must be a non-empty string.`];
+    try {
+      resolveJobIndex(entries, b.job);
+      return [];
+    } catch (e) {
+      return [`bullet[${i}] (${b.id}): ${e.message}`];
+    }
+  });
+}
+
 function validateExperience(exp) {
   if (!exp) return ["Experience is missing."];
   // Accept a list of entries or a single entry object.
@@ -290,11 +306,20 @@ function validateExperience(exp) {
   if (!entries.length) return ["Experience must have at least one entry."];
 
   const errors = [];
+  const ids = new Set();
   entries.forEach((e, i) => {
     const prefix = `experience[${i}]`;
     if (!e || typeof e !== "object") {
       errors.push(`${prefix} must be an object.`);
       return;
+    }
+    if (e.id !== undefined) {
+      if (!isNonEmptyString(e.id)) {
+        errors.push(`${prefix}.id must be a non-empty string if present.`);
+      } else if (ids.has(e.id)) {
+        errors.push(`${prefix}.id '${e.id}' is duplicated.`);
+      }
+      ids.add(e.id);
     }
     if (!isNonEmptyString(e.company)) {
       errors.push(`${prefix} must have a non-empty 'company'.`);
@@ -367,7 +392,9 @@ function main() {
   const variantNames = validateVariants(allowedTags, bulletsById, errors);
   validateApplications(variantNames, allowedTags, bulletsById, errors);
   errors.push(...validateProfile(tryReadYaml(PATHS.profile, errors)));
-  errors.push(...validateExperience(tryReadYaml(PATHS.experience, errors)));
+  const experience = tryReadYaml(PATHS.experience, errors);
+  errors.push(...validateExperience(experience));
+  errors.push(...validateBulletJobs(normalizeBullets(bulletData) || [], experience));
   errors.push(...validateSkills(tryReadYaml(PATHS.skills, errors)));
 
   if (errors.length) {
@@ -384,6 +411,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
 
 export {
   validateApplicationConfig,
+  validateBulletJobs,
   validateTags,
   validateBullets,
   validateVariant,

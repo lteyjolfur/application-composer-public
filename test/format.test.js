@@ -46,21 +46,40 @@ describe("formatFileBase", () => {
 
 describe("formatExperience", () => {
   const experience = [
-    { role: "Senior Dev", company: "Acme", start: 2021, end: "Present", bullets: ["Ignored static."] },
-    { role: "Dev", company: "Globex", start: 2017, end: 2021, bullets: ["Static older bullet."] },
+    { role: "Senior Dev", company: "Acme", start: 2021, end: "Present", bullets: ["Static current bullet."] },
+    { id: "globex", role: "Dev", company: "Globex", start: 2017, end: 2021, bullets: ["Static older bullet."] },
   ];
+  const jobs = (out) => out.split('<div class="job">').slice(1);
 
-  it("puts selected bullets under the first entry only", () => {
-    const out = formatExperience(experience, [{ text: "Selected bullet.\n" }]);
-    const [first, second] = out.split('<div class="job">').slice(1);
+  it("puts bullets without a job under the first entry, replacing its static bullets", () => {
+    const [first, second] = jobs(formatExperience(experience, [{ text: "Selected bullet.\n" }]));
     expect(first).toContain("- Selected bullet.");
-    expect(second).not.toContain("Selected bullet.");
+    expect(first).not.toContain("Static current bullet.");
+    expect(second).toContain("- Static older bullet.");
   });
 
-  it("uses static bullets for older entries and ignores them on the first", () => {
-    const out = formatExperience(experience, []);
-    expect(out).toContain("- Static older bullet.");
-    expect(out).not.toContain("Ignored static.");
+  it("puts a bullet under the job it names, by id or company", () => {
+    const [first, second] = jobs(
+      formatExperience(experience, [
+        { text: "Older win.", job: "globex" },
+        { text: "Current win.", job: "Acme" },
+      ]),
+    );
+    expect(first).toContain("- Current win.");
+    expect(second).toContain("- Older win.");
+    expect(second).not.toContain("Static older bullet.");
+  });
+
+  it("falls back to static bullets on every entry, including the first", () => {
+    const [first, second] = jobs(formatExperience(experience, []));
+    expect(first).toContain("- Static current bullet.");
+    expect(second).toContain("- Static older bullet.");
+  });
+
+  it("rejects a bullet whose job matches nothing", () => {
+    expect(() => formatExperience(experience, [{ text: "x", job: "Initech" }])).toThrow(
+      /does not match any experience entry/,
+    );
   });
 
   it("formats the date range and location", () => {
