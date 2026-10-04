@@ -7,9 +7,11 @@ import { pathToFileURL } from "url";
 import { formatFileBase } from "./lib/formatting.js";
 import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
 import { getApplicationDir, getArg, toPlainName } from "./lib/cli.js";
+import { findPlaceholders } from "./lib/placeholders.js";
 
 const USAGE =
-  "Usage: npm run export -- --application <folder> [--only cv|cover] or --variant <variant>";
+  "Usage: npm run export -- --application <folder> [--only cv|cover] [--draft] or --variant <variant>";
+const MAX_LISTED = 10;
 
 const INSTALL_HINTS = {
   pandoc: "brew install pandoc (macOS) or see https://pandoc.org/installing.html",
@@ -69,6 +71,15 @@ export function exportCommands(job) {
   ];
 }
 
+// Lines describing leftover placeholders, capped so long files stay readable.
+export function describePlaceholders(mdRel, found) {
+  const lines = found
+    .slice(0, MAX_LISTED)
+    .map(({ line, text, why }) => `  ${mdRel}:${line}  ${text}  (${why})`);
+  if (found.length > MAX_LISTED) lines.push(`  ...and ${found.length - MAX_LISTED} more`);
+  return lines;
+}
+
 function run({ cmd, args }) {
   const result = spawnSync(cmd, args, { cwd: repoRoot, stdio: "inherit" });
   if (result.error?.code === "ENOENT") {
@@ -85,6 +96,7 @@ function main() {
   const rawApplication = getArg(args, "application");
   const rawVariant = getArg(args, "variant");
   const only = getArg(args, "only");
+  const draft = args.includes("--draft");
   if (!rawApplication && !rawVariant) throw new Error(USAGE);
   if (only && !["cv", "cover"].includes(only)) {
     throw new Error(`--only must be 'cv' or 'cover', not '${only}'.`);
@@ -101,12 +113,30 @@ function main() {
   const profile = readYaml(path.join(repoRoot, "data/profile/base-profile.yaml"));
   const jobs = planExports({ profile, applicationName, variantName, only });
 
-  for (const job of jobs) {
+  const ready = jobs.filter((job) => {
+    if (fs.existsSync(job.mdPath)) return true;
+    console.log(`Skipping ${path.relative(repoRoot, job.mdPath)}: file not found.`);
+    return false;
+  });
+
+  // Check every document before exporting any, so nothing half-finished is written.
+  const problems = ready.flatMap((job) =>
+    describePlaceholders(
+      path.relative(repoRoot, job.mdPath),
+      findPlaceholders(fs.readFileSync(job.mdPath, "utf8")),
+    ),
+  );
+  if (problems.length && !draft) {
+    throw new Error(
+      ["Placeholders or example text left; edit them, or pass --draft to export anyway:", ...problems].join("\n"),
+    );
+  }
+  if (problems.length) {
+    console.warn(["Exporting a draft with placeholders left:", ...problems].join("\n"));
+  }
+
+  for (const job of ready) {
     const mdRel = path.relative(repoRoot, job.mdPath);
-    if (!fs.existsSync(job.mdPath)) {
-      console.log(`Skipping ${mdRel}: file not found.`);
-      continue;
-    }
     exportCommands(job).forEach(run);
     console.log(`Exported ${mdRel} -> ${path.relative(repoRoot, job.pdfPath)}`);
   }

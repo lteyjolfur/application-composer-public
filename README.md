@@ -341,6 +341,15 @@ Options:
 
 - `--only cv` or `--only cover` - export just one document
 - `--variant <variant>` instead of `--application` - export `output/<variant>.md`
+- `--draft` - export even if placeholders are left (prints a warning instead)
+
+Before exporting anything, `export` checks each document and refuses if it
+still contains template text, listing every hit with its line number:
+
+- unfilled `<PLACEHOLDER>` tokens, such as `<COMPANY_MOTIVATION>`
+- `[EXAMPLE ...]` bullets and instructions like "Replace this" or "replace or remove"
+- template profile data: `Your Name`, `Your Location`, `you@example.com`
+- the stub `cv.md` and `cover-letter.md` written by `new-app`
 
 Files are written next to the Markdown, named
 `<Your_Name>_<Application>_CV.pdf` and `<Your_Name>_<Application>_Cover_Letter.pdf`
