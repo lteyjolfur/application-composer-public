@@ -310,6 +310,14 @@ function assembleCV({ variantName, tags, outputPath, applicationName }) {
   }
 }
 
+export {
+  formatExperience,
+  formatSkills,
+  formatEducation,
+  formatLanguages,
+  getCoverTemplateName,
+};
+
 // CLI entry
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {

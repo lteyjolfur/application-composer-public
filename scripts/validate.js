@@ -309,3 +309,12 @@ function main() {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }
+
+export {
+  validateTags,
+  validateBullets,
+  validateVariant,
+  validateProfile,
+  validateExperience,
+  validateSkills,
+};
