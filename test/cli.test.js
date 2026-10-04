@@ -1,5 +1,6 @@
+import fs from "fs";
 import path from "path";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   applicationsDir,
   getApplicationDir,
@@ -68,6 +69,7 @@ describe("resolveBuildTarget", () => {
       applicationName: "test-app",
       variantName: "fullstack",
       tags: ["frontend", "backend", "fullstack"],
+      excludeTags: [],
       outputPath: path.join(applicationsDir, "test-app", "cv.md"),
     });
   });
@@ -83,12 +85,16 @@ describe("resolveBuildTarget", () => {
     warn.mockRestore();
   });
 
-  it("builds a variant into output/ with parsed --tags", () => {
-    const target = resolveBuildTarget(["--variant", "frontend", "--tags", "react, node,,"], "usage");
+  it("builds a variant into output/ with parsed --tags and --exclude-tags", () => {
+    const target = resolveBuildTarget(
+      ["--variant", "frontend", "--tags", "react, node,,", "--exclude-tags=payments"],
+      "usage",
+    );
     expect(target).toMatchObject({
       applicationName: undefined,
       variantName: "frontend",
       tags: ["react", "node"],
+      excludeTags: ["payments"],
       outputPath: path.join(repoRoot, "output", "frontend.md"),
     });
   });
@@ -100,6 +106,31 @@ describe("resolveBuildTarget", () => {
   it("rejects a variant name that is a path", () => {
     expect(() => resolveBuildTarget(["--variant", "../../x"], "usage")).toThrow(
       /Invalid variant name/,
+    );
+  });
+});
+
+describe("resolveBuildTarget with application exclude_tags", () => {
+  // A throwaway application folder; applications/* is gitignored.
+  const name = `vitest-tmp-${process.pid}`;
+  const dir = path.join(applicationsDir, name);
+  const write = (yaml) => fs.writeFileSync(path.join(dir, "selected-tags.yaml"), yaml);
+
+  beforeAll(() => fs.mkdirSync(dir));
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it("reads exclude_tags", () => {
+    write("variant: fullstack\ntags: [react]\nexclude_tags: [payments]\n");
+    expect(resolveBuildTarget(["--application", name], "usage")).toMatchObject({
+      tags: ["react"],
+      excludeTags: ["payments"],
+    });
+  });
+
+  it("rejects exclude_tags that is not a list", () => {
+    write("variant: fullstack\nexclude_tags: payments\n");
+    expect(() => resolveBuildTarget(["--application", name], "usage")).toThrow(
+      /'exclude_tags' in selected-tags.yaml must be an array/,
     );
   });
 });

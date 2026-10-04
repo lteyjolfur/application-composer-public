@@ -171,22 +171,34 @@ function validateApplication(folder, variantNames, allowedTags, errors) {
   }
   const config = tryReadYaml(tagsRelPath, errors);
   if (config === undefined) return;
+  errors.push(...validateApplicationConfig(config, folder, variantNames, allowedTags));
+}
 
+function validateApplicationConfig(config, folder, variantNames, allowedTags) {
   const prefix = `application ${folder}`;
   if (!isNonEmptyString(config?.variant)) {
-    errors.push(`${prefix}: selected-tags.yaml must contain a 'variant' string.`);
-    return;
+    return [`${prefix}: selected-tags.yaml must contain a 'variant' string.`];
   }
+
+  const errors = [];
   if (!variantNames.has(config.variant)) {
     errors.push(`${prefix}: unknown variant '${config.variant}'.`);
   }
-  if (config.tags !== undefined && config.tags !== null) {
-    if (!Array.isArray(config.tags)) {
-      errors.push(`${prefix}: 'tags' must be an array if present.`);
+  for (const key of ["tags", "exclude_tags"]) {
+    if (config[key] === undefined || config[key] === null) continue;
+    if (!Array.isArray(config[key])) {
+      errors.push(`${prefix}: '${key}' must be an array if present.`);
     } else {
-      errors.push(...validateTagList(config.tags, `${prefix}.tags`, allowedTags));
+      errors.push(...validateTagList(config[key], `${prefix}.${key}`, allowedTags));
     }
   }
+  if (Array.isArray(config.tags) && Array.isArray(config.exclude_tags)) {
+    const excluded = new Set(config.exclude_tags);
+    for (const tag of config.tags.filter((t) => excluded.has(t))) {
+      errors.push(`${prefix}: tag '${tag}' is in both tags and exclude_tags.`);
+    }
+  }
+  return errors;
 }
 
 function validateApplications(variantNames, allowedTags, errors) {
@@ -311,6 +323,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
 }
 
 export {
+  validateApplicationConfig,
   validateTags,
   validateBullets,
   validateVariant,
