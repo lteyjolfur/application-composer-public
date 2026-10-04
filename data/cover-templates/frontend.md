@@ -1,6 +1,6 @@
-Hej,
+Hello,
 
-Jag söker rollen som <ROLE> hos <COMPANY> eftersom <COMPANY_MOTIVATION>.
+I am applying for the <ROLE> position at <COMPANY> because <COMPANY_MOTIVATION>.
 
 <CORE_EXPERIENCE>
 
@@ -8,7 +8,7 @@ Jag söker rollen som <ROLE> hos <COMPANY> eftersom <COMPANY_MOTIVATION>.
 
 <VALUE_PROPOSITION>
 
-Jag berättar gärna mer i ett samtal.
+I would be glad to tell you more in a conversation.
 
-Vänliga hälsningar,  
+Kind regards,  
 <YOUR_NAME>

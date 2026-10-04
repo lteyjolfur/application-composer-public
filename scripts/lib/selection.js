@@ -2,7 +2,7 @@
 // Shared bullet selection logic for build.js and assemble.js
 import fs from "fs";
 import path from "path";
-import yaml from "yaml";
+import { readYaml } from "./files.js";
 
 export const SECTION_ORDER = ["experience", "impact", "leadership"];
 
@@ -15,9 +15,7 @@ export function normalizeBullets(data) {
 
 export function loadBullets(repoRoot) {
   const bulletPath = path.join(repoRoot, "data/bullet-bank/bullets.yaml");
-  const bullets = normalizeBullets(
-    yaml.parse(fs.readFileSync(bulletPath, "utf8")),
-  );
+  const bullets = normalizeBullets(readYaml(bulletPath));
   if (!bullets) {
     throw new Error(
       "bullets.yaml must be an array or an object with a bullets array. Run npm run validate.",
@@ -35,11 +33,9 @@ export function loadBullets(repoRoot) {
 
 export function loadVariant(repoRoot, variantName) {
   const variantsDir = path.join(repoRoot, "data/cv-variants");
-  const files = fs.readdirSync(variantsDir).filter((f) => f.endsWith(".yaml"));
+  const files = fs.readdirSync(variantsDir).filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"));
   for (const f of files) {
-    const variant = yaml.parse(
-      fs.readFileSync(path.join(variantsDir, f), "utf8"),
-    );
+    const variant = readYaml(path.join(variantsDir, f));
     if (variant.variant === variantName) return variant;
   }
   throw new Error(`Variant not found: ${variantName}`);
@@ -60,7 +56,11 @@ const SECTION_LIMITS = {
 };
 
 function normalize(text) {
-  return text.toLowerCase().replace(/[^\w\s]/g, "");
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function isDuplicate(text, selected) {
