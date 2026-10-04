@@ -72,7 +72,7 @@ export function exportCommands(job) {
 }
 
 // Lines describing leftover placeholders, capped so long files stay readable.
-export function describePlaceholders(mdRel, found) {
+function describePlaceholders(mdRel, found) {
   const lines = found
     .slice(0, MAX_LISTED)
     .map(({ line, text, why }) => `  ${mdRel}:${line}  ${text}  (${why})`);

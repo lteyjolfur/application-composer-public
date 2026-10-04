@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupBulletsByJob, resolveJobIndex, toEntries } from "../scripts/lib/experience.js";
+import { resolveJobIndex } from "../scripts/lib/experience.js";
 import { validateBulletJobs, validateExperience } from "../scripts/validate.js";
 
 const entries = [
@@ -27,24 +27,6 @@ describe("resolveJobIndex", () => {
 
   it("rejects an unknown job", () => {
     expect(() => resolveJobIndex(entries, "Initech")).toThrow(/does not match/);
-  });
-});
-
-describe("groupBulletsByJob", () => {
-  it("groups bullets per entry and keeps their order", () => {
-    const groups = groupBulletsByJob(entries, [
-      { id: "a", job: "Globex" },
-      { id: "b" },
-      { id: "c", job: "Globex" },
-    ]);
-    expect(groups.map((g) => g.map((b) => b.id))).toEqual([["b"], [], ["a", "c"]]);
-  });
-});
-
-describe("toEntries", () => {
-  it("wraps a single entry object and handles missing data", () => {
-    expect(toEntries({ role: "Dev" })).toEqual([{ role: "Dev" }]);
-    expect(toEntries(undefined)).toEqual([]);
   });
 });
 

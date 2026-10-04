@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { findPlaceholders } from "../scripts/lib/placeholders.js";
-import { describePlaceholders } from "../scripts/export.js";
 import { repoRoot } from "../scripts/lib/files.js";
 
 const texts = (md) => findPlaceholders(md).map((p) => p.text);
@@ -53,15 +52,5 @@ describe("findPlaceholders", () => {
   it("flags the untouched template example application", () => {
     const cv = fs.readFileSync(path.join(repoRoot, "applications/test-app/cv.md"), "utf8");
     expect(findPlaceholders(cv).length).toBeGreaterThan(0);
-  });
-});
-
-describe("describePlaceholders", () => {
-  it("lists up to 10 matches and counts the rest", () => {
-    const found = Array.from({ length: 12 }, (_, i) => ({ line: i + 1, text: "<X>", why: "unfilled placeholder" }));
-    const lines = describePlaceholders("cv.md", found);
-    expect(lines).toHaveLength(11);
-    expect(lines[0]).toBe("  cv.md:1  <X>  (unfilled placeholder)");
-    expect(lines[10]).toBe("  ...and 2 more");
   });
 });

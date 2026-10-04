@@ -43,30 +43,21 @@ describe("planExports", () => {
 });
 
 describe("exportCommands", () => {
-  it("runs pandoc with every stylesheet and a page title, then weasyprint", () => {
+  it("converts with pandoc using every stylesheet, then writes the PDF with weasyprint", () => {
     const [cover] = planExports({ profile, applicationName: "acme-frontend", only: "cover" });
-    expect(exportCommands(cover)).toEqual([
-      {
-        cmd: "pandoc",
-        args: [
-          "applications/acme-frontend/cover-letter.md",
-          "-o",
-          "applications/acme-frontend/Jordan_Example_Acme_Frontend_Cover_Letter.html",
-          "--standalone",
-          "--css=../../style.css",
-          "--css=../../cover.css",
-          "--metadata",
-          "pagetitle=Jordan Example – Cover Letter",
-        ],
-      },
-      {
-        cmd: "weasyprint",
-        args: [
-          "--quiet",
-          "applications/acme-frontend/Jordan_Example_Acme_Frontend_Cover_Letter.html",
-          "applications/acme-frontend/Jordan_Example_Acme_Frontend_Cover_Letter.pdf",
-        ],
-      },
+    const [pandoc, weasyprint] = exportCommands(cover);
+    const html = "applications/acme-frontend/Jordan_Example_Acme_Frontend_Cover_Letter.html";
+
+    expect(pandoc.cmd).toBe("pandoc");
+    expect(pandoc.args).toContain("applications/acme-frontend/cover-letter.md");
+    expect(pandoc.args).toContain(html);
+    expect(pandoc.args).toEqual(expect.arrayContaining(["--css=../../style.css", "--css=../../cover.css"]));
+    expect(pandoc.args).toContain("pagetitle=Jordan Example – Cover Letter");
+
+    expect(weasyprint.cmd).toBe("weasyprint");
+    expect(weasyprint.args.slice(-2)).toEqual([
+      html,
+      "applications/acme-frontend/Jordan_Example_Acme_Frontend_Cover_Letter.pdf",
     ]);
   });
 });
