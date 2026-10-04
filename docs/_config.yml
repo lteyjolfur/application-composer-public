@@ -1,0 +1,20 @@
+title: Application Composer
+description: >-
+  Notes on building a local, file-based CV and cover letter composer.
+author: Eyjolfur Gudjonsson
+url: https://lteyjolfur.github.io
+baseurl: /application-composer-public
+github_username: lteyjolfur
+repository: lteyjolfur/application-composer-public
+
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+header_pages:
+  - projects.md
+  - about.md
+
+permalink: /:year/:month/:title/
+show_excerpts: true
