@@ -53,7 +53,7 @@ export function getApplicationDir(rawName) {
   return appDir;
 }
 
-function readApplicationConfig(appDir) {
+export function readApplicationConfig(appDir) {
   const tagsPath = path.join(appDir, "selected-tags.yaml");
   if (!fs.existsSync(tagsPath)) {
     throw new Error(`Missing selected-tags.yaml in application folder: ${tagsPath}`);
@@ -72,10 +72,17 @@ function readApplicationConfig(appDir) {
       throw new Error(`'${key}' in selected-tags.yaml must be an array if present.`);
     }
   }
+  for (const key of ["company", "role"]) {
+    if (config[key] != null && typeof config[key] !== "string") {
+      throw new Error(`'${key}' in selected-tags.yaml must be a string if present.`);
+    }
+  }
   return {
     variantName: config.variant,
     tags: config.tags || [],
     excludeTags: config.exclude_tags || [],
+    company: config.company || "",
+    role: config.role || "",
   };
 }
 

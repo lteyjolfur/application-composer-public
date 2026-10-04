@@ -192,6 +192,11 @@ function validateApplicationConfig(config, folder, variantNames, allowedTags) {
       errors.push(...validateTagList(config[key], `${prefix}.${key}`, allowedTags));
     }
   }
+  for (const key of ["company", "role"]) {
+    if (config[key] != null && typeof config[key] !== "string") {
+      errors.push(`${prefix}: '${key}' must be a string if present.`);
+    }
+  }
   if (Array.isArray(config.tags) && Array.isArray(config.exclude_tags)) {
     const excluded = new Set(config.exclude_tags);
     for (const tag of config.tags.filter((t) => excluded.has(t))) {

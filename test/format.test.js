@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatFileBase, formatHeader } from "../scripts/lib/formatting.js";
+import { fillPlaceholders, formatFileBase, formatHeader } from "../scripts/lib/formatting.js";
 import {
   formatEducation,
   formatExperience,
@@ -107,5 +107,23 @@ describe("getCoverTemplateName", () => {
     ["custom", ["react"], "base"],
   ])("variant %s with tags %j picks %s", (variant, tags, expected) => {
     expect(getCoverTemplateName(variant, tags)).toBe(expected);
+  });
+});
+
+describe("fillPlaceholders", () => {
+  it("replaces placeholders that have a value", () => {
+    expect(fillPlaceholders("<ROLE> at <COMPANY>", { ROLE: "Developer", COMPANY: "Acme" })).toBe(
+      "Developer at Acme",
+    );
+  });
+
+  it("leaves placeholders without a value visible", () => {
+    expect(
+      fillPlaceholders("<ROLE> at <COMPANY> because <COMPANY_MOTIVATION>", { COMPANY: "Acme", ROLE: " " }),
+    ).toBe("<ROLE> at Acme because <COMPANY_MOTIVATION>");
+  });
+
+  it("does not touch HTML tags or lowercase angle brackets", () => {
+    expect(fillPlaceholders('<div class="job"> <name>', { NAME: "x" })).toBe('<div class="job"> <name>');
   });
 });

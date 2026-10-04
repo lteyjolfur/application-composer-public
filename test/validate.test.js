@@ -130,4 +130,11 @@ describe("validateApplicationConfig", () => {
       "application acme: tag 'frontend' is in both tags and exclude_tags.",
     ]);
   });
+
+  it("accepts company and role strings and rejects other types", () => {
+    expect(check({ variant: "fullstack", company: "Acme", role: "" })).toEqual([]);
+    expect(check({ variant: "fullstack", company: 42 })).toEqual([
+      "application acme: 'company' must be a string if present.",
+    ]);
+  });
 });

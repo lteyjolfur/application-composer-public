@@ -5,6 +5,7 @@ import {
   applicationsDir,
   getApplicationDir,
   getArg,
+  readApplicationConfig,
   resolveBuildTarget,
   toPlainName,
 } from "../scripts/lib/cli.js";
@@ -125,6 +126,11 @@ describe("resolveBuildTarget with application exclude_tags", () => {
       tags: ["react"],
       excludeTags: ["payments"],
     });
+  });
+
+  it("reads company and role, defaulting to empty strings", () => {
+    write("variant: fullstack\ncompany: Acme\n");
+    expect(readApplicationConfig(dir)).toMatchObject({ company: "Acme", role: "" });
   });
 
   it("rejects exclude_tags that is not a list", () => {

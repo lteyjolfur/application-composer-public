@@ -45,4 +45,13 @@ function formatFileBase({ profile, context, type }) {
   return `${name}_${ctx}_${suffix}`;
 }
 
-export { formatHeader, formatFileBase };
+// Replace `<KEY>` placeholders whose value is a non-empty string; leave the rest
+// in place so they stay visible for manual editing.
+function fillPlaceholders(text, values) {
+  return text.replace(/<([A-Z][A-Z0-9_]*)>/g, (match, key) => {
+    const value = values[key];
+    return typeof value === "string" && value.trim() ? value.trim() : match;
+  });
+}
+
+export { formatHeader, formatFileBase, fillPlaceholders };

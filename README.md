@@ -130,6 +130,8 @@ applications/
 Example `selected-tags.yaml`:
 
 ```yaml
+company: Example Company   # fills <COMPANY> in the cover letter
+role: Frontend Developer   # fills <ROLE> in the cover letter
 variant: fullstack
 tags:            # added to the variant's include_tags
   - authentication
@@ -283,8 +285,10 @@ npm run prepare-cover -- --application example-role --template frontend
 
 The script prepends the profile header and refuses to overwrite a cover letter that already has real content.
 
-Templates are short English skeletons. Replace each `<PLACEHOLDER>` with
-text specific to the job; to write in another language, translate the
+Templates are short English skeletons. `prepare-cover` fills `<COMPANY>` and
+`<ROLE>` from the application's `selected-tags.yaml` and `<YOUR_NAME>` from
+your profile. Placeholders without a value, such as `<COMPANY_MOTIVATION>`,
+stay in place: replace each with text specific to the job; to write in another language, translate the
 templates once and keep the placeholders.
 
 `assemble --application` also writes a cover letter if none exists yet,
