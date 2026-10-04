@@ -53,23 +53,23 @@ function formatProfile(profile) {
 }
 
 
-function getProfile() {
-  const profilePath = path.join(repoRoot, "data/profile/base-profile.yaml");
+function getProfile(root) {
+  const profilePath = path.join(root, "data/profile/base-profile.yaml");
   return readYaml(profilePath);
 }
 
-function getExperience() {
-  const expPath = path.join(repoRoot, "data/experience/experience.yaml");
+function getExperience(root) {
+  const expPath = path.join(root, "data/experience/experience.yaml");
   return readYaml(expPath);
 }
 
-function getSkills() {
-  const skillsPath = path.join(repoRoot, "data/skills/skills.yaml");
+function getSkills(root) {
+  const skillsPath = path.join(root, "data/skills/skills.yaml");
   return readYaml(skillsPath);
 }
 
-function getEducation() {
-  const eduPath = path.join(repoRoot, "data/profile/education.yaml");
+function getEducation(root) {
+  const eduPath = path.join(root, "data/profile/education.yaml");
 
   if (fs.existsSync(eduPath)) {
     return readYaml(eduPath);
@@ -82,8 +82,8 @@ function getLanguages(profile) {
   return Array.isArray(profile.languages) ? profile.languages : [];
 }
 
-function getAllowedTags() {
-  const tagsPath = path.join(repoRoot, "data/tags/tags.yaml");
+function getAllowedTags(root) {
+  const tagsPath = path.join(root, "data/tags/tags.yaml");
   const tagsYaml = readYaml(tagsPath);
 
   if (!tagsYaml || !Array.isArray(tagsYaml.tags)) {
@@ -93,8 +93,8 @@ function getAllowedTags() {
   return new Set(tagsYaml.tags);
 }
 
-function assertKnownTags(tagSources) {
-  const allowedTags = getAllowedTags();
+function assertKnownTags(root, tagSources) {
+  const allowedTags = getAllowedTags(root);
   const errors = [];
 
   for (const { label, tags } of tagSources) {
@@ -161,7 +161,7 @@ function formatEducation(eduYaml) {
     const meta = [];
     if (e.school) meta.push(e.school);
     if (e.start || e.end) {
-      if (e.start && e.end) meta.push(`${e.start}-${e.end}`);
+      if (e.start && e.end) meta.push(`${e.start}–${e.end}`);
       else meta.push(e.start || e.end);
     }
     if (e.location) meta.push(e.location);
@@ -237,16 +237,17 @@ function assembleCV({
   cvSections,
   outputPath,
   applicationName,
+  root = repoRoot, // data folder root; tests point this at a fixture
 }) {
-  const profile = getProfile();
-  const exp = getExperience();
-  const skills = getSkills();
-  const edu = getEducation();
+  const profile = getProfile(root);
+  const exp = getExperience(root);
+  const skills = getSkills(root);
+  const edu = getEducation(root);
   const lang = getLanguages(profile);
-  const bullets = loadBullets(repoRoot);
-  const variant = loadVariant(repoRoot, variantName);
+  const bullets = loadBullets(root);
+  const variant = loadVariant(root, variantName);
 
-  assertKnownTags([
+  assertKnownTags(root, [
     {
       label: `variant '${variantName}' exclude_tags`,
       tags: variant.exclude_tags || [],
@@ -313,6 +314,7 @@ function assembleCV({
 }
 
 export {
+  assembleCV,
   formatExperience,
   formatSkills,
   formatEducation,

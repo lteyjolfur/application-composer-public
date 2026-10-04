@@ -100,11 +100,11 @@ describe("formatSkills", () => {
 });
 
 describe("formatEducation", () => {
-  it("joins school, years, and location", () => {
+  it("joins school, years (with an en dash, like experience), and location", () => {
     const out = formatEducation({
       education: [{ degree: "BSc", school: "Example University", start: 2013, end: 2016, location: "Lund" }],
     });
-    expect(out).toContain("### BSc\nExample University · 2013-2016 · Lund\n");
+    expect(out).toContain("### BSc\nExample University · 2013–2016 · Lund\n");
   });
 });
 
