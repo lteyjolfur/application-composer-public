@@ -5,9 +5,6 @@ description: "How Application Composer selects, validates, and exports a CV per 
 tags: [node, yaml, tooling]
 ---
 
-<!-- Draft: move to docs/_posts/YYYY-MM-DD-building-application-composer.md to publish,
-     after PR #5 (pins, cv_sections, export, schemas) is merged. -->
-
 [Application Composer](https://github.com/lteyjolfur/application-composer-public)
 builds a tailored CV and cover letter for each job application from YAML and
 Markdown, with small Node.js scripts and no database or network calls.
@@ -27,7 +24,7 @@ Markdown, with small Node.js scripts and no database or network calls.
 company: Acme
 role: Frontend Developer
 variant: frontend
-tags: [accessibility]
+tags: [react]
 exclude_tags: [payments]
 pin: [design-system-migration]
 cv_sections: [profile, experience, skills]
