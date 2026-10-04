@@ -67,6 +67,7 @@ npm run validate
 - `npm run assemble -- --variant <variant> [--tags a,b] [--exclude-tags c,d]` - Build a complete CV for a variant into `output/`
 - `npm run build -- --variant <variant>` - Build a minimal bullet-only CV variant
 - `npm run prepare-cover -- --application <folder> --template <template>` - Generate a cover letter from a template
+- `npm run export -- --application <folder>` - Export the CV and cover letter to HTML and PDF
 
 ## Common Workflow
 
@@ -94,7 +95,11 @@ npm run prepare-cover -- --application example-role --template frontend
 ```
 
 6. Review and manually edit `cv.md` and `cover-letter.md`.
-7. Export to HTML/PDF if needed.
+7. Export to HTML and PDF:
+
+```sh
+npm run export -- --application example-role
+```
 
 ## Application Folders
 
@@ -319,59 +324,39 @@ Generated `.html` and `.pdf` exports are allowed alongside the core source files
 
 ## Exporting HTML And PDF
 
-The project generates Markdown by default. HTML and PDF export are handled with external CLI tools.
-
-Recommended tools:
-
-- Pandoc - Converts Markdown to HTML
-- WeasyPrint - Converts HTML to PDF
-
-Install on macOS:
+`npm run export` converts the Markdown to HTML with Pandoc and then to PDF with
+WeasyPrint. Install both first; on macOS:
 
 ```sh
-brew install pandoc
-brew install weasyprint
+brew install pandoc weasyprint
 ```
 
-Example CV export:
+Export an application's CV and cover letter:
 
 ```sh
-pandoc applications/example-role/cv.md \
-  -o applications/example-role/cv.html \
-  --css=../../style.css \
-  --standalone
-
-weasyprint applications/example-role/cv.html \
-  applications/example-role/cv.pdf
+npm run export -- --application example-role
 ```
 
-Example cover letter export:
+Options:
 
-```sh
-pandoc applications/example-role/cover-letter.md \
-  -o applications/example-role/cover-letter.html \
-  --css=../../style.css \
-  --css=../../cover.css \
-  --standalone
+- `--only cv` or `--only cover` - export just one document
+- `--variant <variant>` instead of `--application` - export `output/<variant>.md`
 
-weasyprint applications/example-role/cover-letter.html \
-  applications/example-role/cover-letter.pdf
-```
-
-The `assemble` and `prepare-cover` scripts print ready-to-run export commands after writing Markdown.
+Files are written next to the Markdown, named
+`<Your_Name>_<Application>_CV.pdf` and `<Your_Name>_<Application>_Cover_Letter.pdf`
+(plus the intermediate `.html`). The CV uses `style.css`; the cover letter adds
+`cover.css`. `assemble` and `prepare-cover` print the export command to run next.
 
 ## Troubleshooting
 
+If `npm run export` says `pandoc` or `weasyprint` is not installed:
+
+- Install it (see "Exporting HTML And PDF") and check it runs from your shell.
+
 If the PDF looks unstyled:
 
-- Check that the generated HTML links to the correct CSS path.
-- From `applications/<name>/cv.html`, the relative path to root `style.css` is `../../style.css`.
-- Cover letters should include both `../../style.css` and `../../cover.css`.
-
-If Pandoc PDF export fails with LaTeX errors:
-
-- Use the Markdown to HTML to WeasyPrint flow shown above.
-- Direct Pandoc-to-PDF export uses LaTeX by default and is not required.
+- Export with `npm run export` rather than running Pandoc by hand; it computes the stylesheet paths.
+- The generated HTML should link `../../style.css` (and `../../cover.css` for cover letters).
 
 If a script reports `Invalid application name` (or variant or template name):
 

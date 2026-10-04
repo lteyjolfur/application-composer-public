@@ -4,8 +4,8 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
-import { formatFileBase, formatHeader } from "./lib/formatting.js";
-import { repoRoot, readYaml, getCssPath } from "./lib/files.js";
+import { formatHeader } from "./lib/formatting.js";
+import { repoRoot, readYaml } from "./lib/files.js";
 import {
   loadBullets,
   loadVariant,
@@ -285,26 +285,10 @@ function assembleCV({ variantName, tags, excludeTags, outputPath, applicationNam
     console.log(`Output: ${outputPath}`);
   }
 
-  // New export file naming
-  const context = applicationName || variantName;
-  const baseName = formatFileBase({ profile, context, type: "cv" });
-  const htmlPath = path.join(path.dirname(outputPath), `${baseName}.html`);
-  const pdfPath = path.join(path.dirname(outputPath), `${baseName}.pdf`);
-  const cssPath = getCssPath(outputPath);
-
-  // Helper for relative paths from repo root
-  function rel(filePath) {
-    return path.relative(repoRoot, filePath);
-  }
-  const mdRel = rel(outputPath);
-  const htmlRel = rel(htmlPath);
-  const pdfRel = rel(pdfPath);
-
-  console.log("\nPDF export:");
-  console.log(
-    `pandoc ${mdRel} -o ${htmlRel} --css=${cssPath} --standalone && weasyprint --quiet ${htmlRel} ${pdfRel}`,
-  );
-  console.log("");
+  const target = applicationName
+    ? `--application ${applicationName}`
+    : `--variant ${variantName}`;
+  console.log(`\nExport to HTML and PDF: npm run export -- ${target}\n`);
 
   if (applicationName) {
     const templateName = getCoverTemplateName(variantName, effectiveTags);
