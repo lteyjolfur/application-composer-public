@@ -1,0 +1,19 @@
+title: Application Composer
+description: >-
+  Technical notes on Application Composer, a local, file-based CV and cover
+  letter composer.
+url: https://lteyjolfur.github.io
+baseurl: /application-composer-public
+github_username: lteyjolfur
+repository: lteyjolfur/application-composer-public
+
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+header_pages:
+  - projects.md
+
+permalink: /:year/:month/:title/
+show_excerpts: true
