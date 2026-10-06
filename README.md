@@ -65,6 +65,9 @@ belong under `data/cover-templates/` and `data/cv-variants/`. Each individual
 job advertisement, its tailoring notes, and generated application documents
 belong in a separate directory under `applications/`.
 
+Requires Node.js 22 (22.12 or later) or 24+. Exporting to HTML and PDF also needs Pandoc
+and WeasyPrint (see "Exporting HTML And PDF").
+
 Install dependencies and verify your edits:
 
 ```sh
@@ -365,6 +368,8 @@ Validation checks:
 - Variants have valid, unique names and include tags
 - Application folders contain required files
 - Application selected variants exist, and no tag is in both an application's `tags` and `exclude_tags`
+- Application `company` and `role`, when present, are strings
+- `cv_sections` in variants and applications lists only known sections, each at most once
 - Pinned bullet ids exist, and an application does not pin a bullet its own `exclude_tags` drops
 - Tags used by bullets, variants, and applications exist in `data/tags/tags.yaml`
 - Profile, experience, and skills have the required shape; experience `id`s are unique
@@ -493,4 +498,3 @@ a breaking change bumps the minor version instead of the major.
 
 - Expand the bullet bank for frontend, fullstack, leadership, and test automation variants.
 - Tune scoring and section limits only after the source bullets are strong.
-- Add optional pinned bullets per variant or application if manual control becomes too repetitive.
